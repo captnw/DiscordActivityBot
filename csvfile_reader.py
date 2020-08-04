@@ -4,8 +4,7 @@ import csv
 
 filename = "private_data.csv"
 fields = ["name", "status"]
-temp_file = NamedTemporaryFile('w+t', newline='', delete=False)
-dumpo = {"name": 'b', "status": 'a'}
+temp_file = NamedTemporaryFile('w', newline='', delete=False)
 
 
 def write_header() -> None:
@@ -21,20 +20,26 @@ def write_into(lista : list) -> None:
         # First check if the data exists in .csv file
         reader = csv.DictReader(csv_file, fieldnames=fields)
         temp_writer = csv.DictWriter(temp_file, fieldnames=fields)
-        writer = csv.DictWriter(csv_file, fieldnames=fields)
+        edit = False
 
         for row in reader:
-            #if row["name"] == lista[0]:
-            #    row["name"], row["status"] = lista[0], lista[1]
-            #row = {"name": row["name"], "status": row["status"]}
+            if row["name"] == lista[0]:
+                edit = True
+                row["name"], row["status"] = lista[0], lista[1]
+            row = {"name": row["name"], "status": row["status"]}
             temp_writer.writerow(row)
-        shutil.move(temp_file.name, filename)
-        
-        # <Purpose> writes data into the csv
-        writer.writerow({"name": lista[0], "status": lista[1]})
-        
 
-write_header()
-write_into(['phat','online'])
-write_into(['captnw', 'dnd'])
-write_into(['phat', 'stupid'])
+        # <Purpose> writes data into the csv
+        if (not edit):
+            temp_writer.writerow({"name": lista[0], "status": lista[1]})
+
+
+    shutil.move(temp_file.name, filename)
+        
+        
+ # ONE AT A TIME       
+
+#write_header()
+#write_into(['phat','online'])
+#write_into(['captnw', 'dnd'])
+#write_into(['phat', 'stupid'])
