@@ -73,11 +73,12 @@ def csv_clear() -> bool:
 
 
 # Commands should probably go along this order (as seen below)
-csv_bootup()
-csv_write_into(['phat','online'])
-csv_write_into(['captnw', 'dnd'])
-csv_write_into(['phat', 'stupid'])
-csv_write_into(["james's dog", "name is forgotten"])
-csv_shutdown()
+#if __name__ == "__main__":
+    #csv_bootup()
+    #csv_write_into(['phat','online'])
+    #csv_write_into(['captnw', 'dnd'])
+    #csv_write_into(['phat', 'stupid'])
+    #csv_write_into(["james's dog", "name is forgotten"])
+    #csv_shutdown()
 
 
