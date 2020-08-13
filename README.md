@@ -1,2 +1,4 @@
-# KJW
-Karma. Justice. Whatever. Some random discord bot.
+# DiscordUserScheduleBot
+Made by James and William. 
+
+This bot would display the user's times online on discord when the bot is prompted.
