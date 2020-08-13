@@ -3,7 +3,7 @@ from os import path
 import csv
 
 filename = "private_data.csv"
-fields = ["_NAME", "_NICKNAME", "_STATUS", "_SCHEDULE"]
+fields = ["_NAME", "_NICKNAME", "_ID", "_STATUS", "_SCHEDULE"]
 
 clear_safety = True # You're going to have to manually set this to false before calling the clear() function
 big_struct = [] # This will store + update all of the user info while the bot is still active
