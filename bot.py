@@ -1,7 +1,6 @@
-import discord
+import discord, secretTextfile
 from discord.ext import commands
 from csvfile_reader import *
-import time
 
 
 def begin_phrase(msg, listA: list) -> bool:
@@ -59,5 +58,5 @@ if __name__ == "__main__":
     #    csv_shutdown()
     
 
-    client.run("NzM4MTM1NTE0ODUwNTI1MzM3.XyHgRA.4nQ2q7_IqeKMKm_STOlhyJLV9pU")
+    client.run(secretTextfile.__TOKEN__)
     # DO NOT ADD CODE AFTER THIS B/C client.run NEVER RETURNS
