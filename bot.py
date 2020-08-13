@@ -52,11 +52,13 @@ class MyClient(discord.Client):
 
     async def on_member_update(self, before, after):
         print("A member's status has changed or something Idk")
-        csv_write_into([after.name, after.status])
+        # Now it's name, nickname, status, schedule
+        #csv_write_into([after.name, after.status])
         print("Before: {}".format(big_struct))
         print("After: {}".format(big_struct))
 
     async def csv_manager(self):
+        # need to learn more about async.io
         await self.wait_until_ready()
         csv_bootup()
 

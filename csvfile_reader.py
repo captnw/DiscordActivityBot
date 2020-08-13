@@ -3,7 +3,7 @@ from os import path
 import csv
 
 filename = "private_data.csv"
-fields = ["name", "status"]
+fields = ["_NAME", "_NICKNAME", "_STATUS", "_SCHEDULE"]
 
 clear_safety = True # You're going to have to manually set this to false before calling the clear() function
 big_struct = [] # This will store + update all of the user info while the bot is still active
@@ -22,10 +22,11 @@ def csv_bootup() -> None:
         with open(filename, "r") as csv_file_rd:
             reader = csv.DictReader(csv_file_rd, fieldnames= fields)
             for row in reader:
-                if row["name"] == "name" or row["status"] == "status": 
+                #print(f"{row.values()}")
+                if "_NAME" in row.values():
                     # Do not copy the header into big_struct (avoid duplication)
                     continue
-                big_struct.append({"name": row["name"], "status": row["status"]})
+                big_struct.append({field : (row[field] if field in row.keys() else "_NODATA") for field in fields})
    
 
 def csv_shutdown() -> None:
@@ -34,7 +35,7 @@ def csv_shutdown() -> None:
     with open(filename, "w+", newline='') as csv_file_wr:
         # Sort the list of dictionaries by name ...
         global big_struct
-        big_struct = sorted(big_struct, key = lambda dicta : dicta["name"])
+        big_struct = sorted(big_struct, key = lambda dicta : dicta["_NAME"])
 
         # Then write the new stuff in the .csv file
         writer = csv.DictWriter(csv_file_wr, fieldnames= fields)
@@ -46,18 +47,20 @@ def csv_shutdown() -> None:
 
 def csv_write_into(lista : list) -> None:
     ''' Modifies / adds a new entry to big_struct '''
-    name, status = lista[0],lista[1]
+    givenInfo = [lista[fieldnum] if fieldnum < len(lista) else "_NODATA" for fieldnum in range(len(fields))]
     nameExist = False
 
     for dicta in big_struct:
-        if dicta["name"] == name:
+        if dicta["_NAME"] == givenInfo[0]:
             # Name already exists, so just modify the status and other information
-            dicta["status"] = status
+            for fieldnum in range(1,len(fields)):
+                fieldname = fields[fieldnum]
+                dicta[fieldname] = givenInfo[fieldnum] if fieldnum < len(givenInfo) else "_NODATA"
             nameExist = True
 
     if not nameExist:
         # Name doesn't exist, so we have to add it to our big_struct
-        big_struct.append({"name": name, "status": status})
+        big_struct.append({fields[fieldnum] : (lista[fieldnum] if fieldnum < len(lista) else "_NODATA") for fieldnum in range(len(fields))})
 
 
 def csv_clear() -> bool:
@@ -66,19 +69,23 @@ def csv_clear() -> bool:
         this function can clear the .csv. Returns whether the .csv
         has been successfully cleared or not. '''
     if clear_safety == False:
+        print("CLEAR SAFETY IS OFF, CLEARING CVS FILE ...")
         f = open(filename, 'r+')
         f.truncate(0) # need '0' when using r+
         f.seek(0,0) # return back to start of file
+        f.close()
+        print("CVS FILE HAS BEEN CLEARED.")
     return not clear_safety
 
 
 # Commands should probably go along this order (as seen below)
-#if __name__ == "__main__":
-    #csv_bootup()
-    #csv_write_into(['phat','online'])
-    #csv_write_into(['captnw', 'dnd'])
-    #csv_write_into(['phat', 'stupid'])
-    #csv_write_into(["james's dog", "name is forgotten"])
-    #csv_shutdown()
+if __name__ == "__main__":
+    csv_bootup()
+    csv_write_into(["james","phat","online"])
+    csv_write_into(["william","captnw", "dnd"])
+    csv_write_into(["james","phat", "stupid"])
+    csv_write_into(["autumn","james's dog", "sleeping"])
+    csv_shutdown()
+    csv_clear()
 
-
+ 
