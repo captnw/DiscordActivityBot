@@ -1,6 +1,6 @@
 import discord, secretTextfile, asyncio, datetime
 from discord.ext import commands
-from csvfile_reader import csv_bootup, csv_shutdown, csv_write_into, csv_clear, csv_lookup_schedule, print_schedule
+from csvfile_reader import csv_bootup, csv_shutdown, csv_write_into, csv_clear, csv_lookup_schedule
 from graph_producer import produce_graph
 
 
@@ -8,7 +8,7 @@ def check_online(cli : commands.Bot) -> None:
     ''' Determines what members that the bot sees are online at the current hour and stores that info + their
         status into a datastructure (a list of dicts which has a key of string and a value of list of ints)'''
     now = datetime.datetime.now()
-    print(f"Checking who is online on {now.month}/{now.day}/{now.year} at {now.hour}:{now.minute}")
+    print(f"Checking who is online on {now.month}/{now.day}/{now.year} at {now.hour}:{now.minute}:{now.second}\n")
 
     online_people = ""
 
@@ -24,10 +24,7 @@ def check_online(cli : commands.Bot) -> None:
                 # Pop the first element to make room for a new one
                 # If we have 10 days worth of data already
                 old_schedule.pop(0)
-            old_schedule.append({now.day : [0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0]})
+            old_schedule.append({now.day : [0 for num in range(24)]})
 
         if str(member.status) != "offline":
             # If the member is not offline, update the current hour
@@ -35,9 +32,6 @@ def check_online(cli : commands.Bot) -> None:
             online_people += str(member) + ", "
         member_data.append(str(old_schedule))
         csv_write_into(member_data)
-
-        #DEBUG PRINT
-        #print_schedule()
 
     if online_people != "":
         online_people = online_people.rstrip(", ")
@@ -71,7 +65,7 @@ if __name__ == "__main__":
 
         while True:
             check_online(client)
-            await asyncio.sleep(900)
+            await asyncio.sleep(30)
 
 
     @client.event

@@ -7,13 +7,13 @@ def activity_converter(hour : list, day : int) -> list:
 def int_to_str(int_list : list) -> list:
     return [str(item) if item != 0 else str(0) for item in int_list]
 
-def produce_graph(data: list, id: str) -> None:
+def produce_graph(data: list, id: str, name: str) -> None:
     plt.style.use('seaborn')
     zero_list = [0 for zero in range(24)]
     hour_x = [num for num in range(1, 25)]
     plt.scatter(hour_x, int_to_str(zero_list))
-    plt.title("Active Hours on discord")
-    plt.xlabel("Hours Online")
+    plt.title(f"{name}'s Active Hours on discord")
+    plt.xlabel(" Hours Online")
     plt.ylabel("Day")
     plt.xticks(hour_x)
     for day in range(len(data)):
