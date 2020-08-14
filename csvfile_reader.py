@@ -1,6 +1,5 @@
-import os.path
+import os.path, csv, ast
 from os import path
-import csv
 
 filename = "private_data.csv"
 fields = ["_NAME", "_NICKNAME", "_ID", "_STATUS", "_SCHEDULE"]
@@ -76,6 +75,20 @@ def csv_clear() -> bool:
         f.close()
         print("CVS FILE HAS BEEN CLEARED.")
     return not clear_safety
+
+
+def csv_lookup_schedule(id, current_day) -> list:
+    ''' Return someone's 24 hour activity which is denoted by a list of boolean values (true/false means
+        active for the hour at the index+1th hour). Otherwise returns a list of size 24 all set to false'''
+    for dicta in big_struct:
+        if dicta["_ID"] == id:
+            large_struct = ast.literal_eval(dicta["_SCHEDULE"])
+            #print("Name: {}, Data: {}".format(dicta["_NAME"],large_struct))
+            return large_struct
+    return [{current_day : [0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0]}]
 
 
 # Commands should probably go along this order (as seen below)

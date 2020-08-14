@@ -16,6 +16,7 @@ class admin_commands(commands.Cog):
             await context.send(f"{member.name}'s status is {member.status}")
             await context.send(f"{member.name}'s color is {member.color}")
             await context.send(f"{member.name}'s role is {member.roles}")
+        channel_members = channel_members.rstrip(", ")
         await context.send(f"{channel_members} are in the channel")
     
     
