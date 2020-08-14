@@ -12,26 +12,28 @@ def check_online(cli : commands.Bot) -> None:
 
     online_people = ""
 
-    for member in client.get_all_members():
-        member_id = (str(member).split("#"))[1]
-        # Fetching all other data excluding schedule
-        member_data = [str(member), str(member.nick), member_id,str(member.status)]
-        old_schedule = csv_lookup_schedule(member_id, now.day)
+    for member in sorted(client.get_all_members(), key = lambda x : str(x)):
+        if not (member.bot):
+            member_name, member_id = str(member).split("#")
 
-        if not (now.day in old_schedule[-1].keys()):
-            # Consider making a new dict if today is different
-            if len(old_schedule) == 10:
-                # Pop the first element to make room for a new one
-                # If we have 10 days worth of data already
-                old_schedule.pop(0)
-            old_schedule.append({now.day : [0 for num in range(24)]})
+            # Fetching all other data excluding schedule
+            member_data = [str(member), str(member.nick), member_id,str(member.status)]
+            old_schedule = csv_lookup_schedule(member_id, now.day)
 
-        if str(member.status) != "offline":
-            # If the member is not offline, update the current hour
-            old_schedule[-1][now.day][now.hour-1] = old_schedule[-1][now.day][now.hour-1] | 1
-            online_people += str(member) + ", "
-        member_data.append(str(old_schedule))
-        csv_write_into(member_data)
+            if not (now.day in old_schedule[-1].keys()):
+                # Consider making a new dict if today is different
+                if len(old_schedule) == 10:
+                    # Pop the first element to make room for a new one
+                    # If we have 10 days worth of data already
+                    old_schedule.pop(0)
+                old_schedule.append({now.day : [0 for num in range(24)]})
+
+            if str(member.status) != "offline":
+                # If the member is not offline, update the current hour
+                old_schedule[-1][now.day][now.hour-1] = old_schedule[-1][now.day][now.hour-1] | 1
+                online_people += member_name + ", "
+            member_data.append(str(old_schedule))
+            csv_write_into(member_data)
 
     if online_people != "":
         online_people = online_people.rstrip(", ")
@@ -65,7 +67,8 @@ if __name__ == "__main__":
 
         while True:
             check_online(client)
-            await asyncio.sleep(30)
+            # Every 5 minutes
+            await asyncio.sleep(300) 
 
 
     @client.event
