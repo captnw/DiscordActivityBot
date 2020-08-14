@@ -22,5 +22,5 @@ def produce_graph(data: list, id: str) -> None:
         activity_list = activity_converter(bool_activity_list, int(day_legend))
         plt.scatter(hour_x, int_to_str(activity_list))
     plt.savefig(f"./graph_folder/{id}.png")
-
+    plt.close()
 

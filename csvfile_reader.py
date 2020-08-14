@@ -84,6 +84,7 @@ def csv_lookup_schedule(id, current_day) -> list:
     for dicta in big_struct:
         if dicta["_ID"] == id:
             large_struct = ast.literal_eval(dicta["_SCHEDULE"])
+            #DEBUG PRINT
             #print("Name: {}, Data: {}".format(dicta["_NAME"],large_struct))
             return large_struct
     return [{current_day : [0, 0, 0, 0, 0, 0,
@@ -91,6 +92,10 @@ def csv_lookup_schedule(id, current_day) -> list:
             0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0]}]
 
+
+def print_schedule() -> None:
+    ''' Debug print schedule '''
+    print(big_struct)
 
 # Commands should probably go along this order (as seen below)
 if __name__ == "__main__":

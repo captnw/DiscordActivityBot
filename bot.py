@@ -1,6 +1,6 @@
 import discord, secretTextfile, asyncio, datetime
 from discord.ext import commands
-from csvfile_reader import csv_bootup, csv_shutdown, csv_write_into, csv_clear, csv_lookup_schedule
+from csvfile_reader import csv_bootup, csv_shutdown, csv_write_into, csv_clear, csv_lookup_schedule, print_schedule
 from graph_producer import produce_graph
 
 
@@ -36,6 +36,9 @@ def check_online(cli : commands.Bot) -> None:
         member_data.append(str(old_schedule))
         csv_write_into(member_data)
 
+        #DEBUG PRINT
+        #print_schedule()
+
     if online_people != "":
         online_people = online_people.rstrip(", ")
         print("{} are online right now.".format(online_people))
@@ -53,7 +56,7 @@ def begin_phrase(msg, listA: list) -> bool:
 
 if __name__ == "__main__":
     client = commands.Bot(command_prefix = '!')
-    extensions = ["cogs.fun_commands", "cogs.admin_commands"]
+    extensions = ["cogs.fun_commands", "cogs.admin_commands", "cogs.public_commands"]
     for ext in extensions:
         client.load_extension(ext)
 
@@ -81,14 +84,6 @@ if __name__ == "__main__":
     async def on_message_delete(message):
         ''' Bot announces that somebody has deleted something. '''
         await message.channel.send(f"{message.author.name} has hidden a message. ")
-
-
-    @client.command(aliases = ["Myschedule","MySchedule", "MM"])
-    async def myschedule(context):
-        user_id = (str(context.message.author).split("#"))[1]
-        now = datetime.datetime.now()
-        lista = csv_lookup_schedule(user_id, now.day)
-        produce_graph(lista, user_id)
 
 
     client.run(secretTextfile.__TOKEN__)
