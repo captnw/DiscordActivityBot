@@ -7,7 +7,7 @@ class fun_commands(commands.Cog):
 
     @commands.command()
     async def ping(self, context):
-        print({role : role.id for role in context.message.author.roles})
+        #print({role : role.id for role in context.message.author.roles})
         await context.send(f"{int(self.client.latency*1000)}ms")
 
     @commands.command(aliases = ["Hello","Hi","hi"])

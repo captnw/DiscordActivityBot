@@ -1,4 +1,5 @@
-import os.path, csv, ast
+import csv, ast
+import os.path
 from os import path
 
 filename = "private_data.csv"

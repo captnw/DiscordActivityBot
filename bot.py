@@ -1,6 +1,7 @@
 import discord, secretTextfile, asyncio, datetime
 from discord.ext import commands
-from csvfile_reader import *
+from csvfile_reader import csv_bootup, csv_shutdown, csv_write_into, csv_clear, csv_lookup_schedule
+from graph_producer import produce_graph
 
 
 def check_online(cli : commands.Bot) -> None:
@@ -23,7 +24,7 @@ def check_online(cli : commands.Bot) -> None:
                 # Pop the first element to make room for a new one
                 # If we have 10 days worth of data already
                 old_schedule.pop(0)
-            old_schedule.append({DEBUG_DAY : [0, 0, 0, 0, 0, 0,
+            old_schedule.append({now.day : [0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0]})
@@ -56,6 +57,7 @@ if __name__ == "__main__":
     for ext in extensions:
         client.load_extension(ext)
 
+
     @client.event
     async def on_ready():
         print("Logged in as")
@@ -67,6 +69,7 @@ if __name__ == "__main__":
         while True:
             check_online(client)
             await asyncio.sleep(900)
+
 
     @client.event
     async def on_disconnect():
@@ -80,24 +83,13 @@ if __name__ == "__main__":
         await message.channel.send(f"{message.author.name} has hidden a message. ")
 
 
-    #@client.event
-    #async def on_member_update(before, after):
-    #    print("A member's status has changed.")
-    #    # Now it's name, nickname, id, status, schedule
-    #    csv_write_into([str(after), after.nick, (str(after).split("#"))[1],after.status])
-    #    print("Before: {}".format(big_struct))
-    #    print("After: {}".format(big_struct))
+    @client.command(aliases = ["Myschedule","MySchedule", "MM"])
+    async def myschedule(context):
+        user_id = (str(context.message.author).split("#"))[1]
+        now = datetime.datetime.now()
+        lista = csv_lookup_schedule(user_id, now.day)
+        produce_graph(lista, user_id)
 
-
-    #@client.command()
-    #async def startCsv(context):
-    #    csv_bootup()
-
-    
-    #@client.command()
-    #async def stopCsv(context):
-    #    csv_shutdown()
-    
 
     client.run(secretTextfile.__TOKEN__)
     # DO NOT ADD CODE AFTER THIS B/C client.run NEVER RETURNS
