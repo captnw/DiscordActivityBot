@@ -4,20 +4,33 @@ from csvfile_reader import *
 
 
 def check_online(cli : commands.Bot) -> None:
+    ''' Determines what members that the bot sees are online at the current hour and stores that info + their
+        status into a datastructure (a list of dicts which has a key of string and a value of list of ints)'''
     now = datetime.datetime.now()
     print(f"Checking who is online on {now.month}/{now.day}/{now.year} at {now.hour}:{now.minute}")
 
     online_people = ""
 
-    # currently schedule is 1D and doesn't reflect the day ... 
-    # work on it tomorrow
-
     for member in client.get_all_members():
         member_id = (str(member).split("#"))[1]
+        # Fetching all other data excluding schedule
         member_data = [str(member), str(member.nick), member_id,str(member.status)]
-        old_schedule = csv_lookup_schedule(member_id)
+        old_schedule = csv_lookup_schedule(member_id, now.day)
+
+        if not (now.day in old_schedule[-1].keys()):
+            # Consider making a new dict if today is different
+            if len(old_schedule) == 10:
+                # Pop the first element to make room for a new one
+                # If we have 10 days worth of data already
+                old_schedule.pop(0)
+            old_schedule.append({DEBUG_DAY : [0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0]})
+
         if str(member.status) != "offline":
-            old_schedule[now.hour] = old_schedule[now.hour] or True
+            # If the member is not offline, update the current hour
+            old_schedule[-1][now.day][now.hour-1] = old_schedule[-1][now.day][now.hour-1] | 1
             online_people += str(member) + ", "
         member_data.append(str(old_schedule))
         csv_write_into(member_data)
