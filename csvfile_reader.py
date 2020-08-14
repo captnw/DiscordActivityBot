@@ -78,6 +78,18 @@ def csv_clear() -> bool:
     return not clear_safety
 
 
+def csv_lookup_schedule(id) -> list:
+    ''' Return someone's 24 hour activity which is denoted by a list of boolean values (true/false means
+        active for the hour at the index+1th hour). Otherwise returns a list of size 24 all set to false'''
+    for dicta in big_struct:
+        if dicta["_ID"] == id:
+            return [True if elem == '1' else False for elem in dicta["_SCHEDULE"]]
+    return [False, False, False, False, False, False,
+            False, False, False, False, False, False,
+            False, False, False, False, False, False,
+            False, False, False, False, False, False]
+
+
 # Commands should probably go along this order (as seen below)
 if __name__ == "__main__":
     csv_bootup()

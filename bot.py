@@ -1,6 +1,32 @@
-import discord, secretTextfile
+import discord, secretTextfile, asyncio, datetime
 from discord.ext import commands
 from csvfile_reader import *
+
+
+def check_online(cli : commands.Bot) -> None:
+    now = datetime.datetime.now()
+    print(f"Checking who is online on {now.month}/{now.day}/{now.year} at {now.hour}:{now.minute}")
+
+    online_people = ""
+
+    # currently schedule is 1D and doesn't reflect the day ... 
+    # work on it tomorrow
+
+    for member in client.get_all_members():
+        member_id = (str(member).split("#"))[1]
+        member_data = [str(member), str(member.nick), member_id,str(member.status)]
+        old_schedule = csv_lookup_schedule(member_id)
+        if str(member.status) != "offline":
+            old_schedule[now.hour] = old_schedule[now.hour] or True
+            online_people += str(member) + ", "
+        member_data.append(str(old_schedule))
+        csv_write_into(member_data)
+
+    if online_people != "":
+        online_people = online_people.rstrip(", ")
+        print("{} are online right now.".format(online_people))
+    else:
+        print("Nobody is online right now.")
 
 
 def begin_phrase(msg, listA: list) -> bool:
@@ -12,7 +38,6 @@ def begin_phrase(msg, listA: list) -> bool:
 
 
 if __name__ == "__main__":
-
     client = commands.Bot(command_prefix = '!')
     extensions = ["cogs.fun_commands", "cogs.admin_commands"]
     for ext in extensions:
@@ -26,26 +51,29 @@ if __name__ == "__main__":
         print('------')
         csv_bootup()
 
+        while True:
+            check_online(client)
+            await asyncio.sleep(900)
 
     @client.event
     async def on_disconnect():
-        print("Bot is actually disconnected.")
+        print("Bot is now offline.")
         csv_shutdown()
 
 
     @client.event
     async def on_message_delete(message):
-        ''' Bot prints message people tried to delete '''
-        await message.channel.send(f"{message.author.name} tried to hide this message: {message.content}")
+        ''' Bot announces that somebody has deleted something. '''
+        await message.channel.send(f"{message.author.name} has hidden a message. ")
 
 
-    @client.event
-    async def on_member_update(before, after):
-        print("A member's status has changed or something Idk")
-        # Now it's name, nickname, id, status, schedule
-        csv_write_into([str(after), after.nick, (str(after).split("#"))[1],after.status])
-        print("Before: {}".format(big_struct))
-        print("After: {}".format(big_struct))
+    #@client.event
+    #async def on_member_update(before, after):
+    #    print("A member's status has changed.")
+    #    # Now it's name, nickname, id, status, schedule
+    #    csv_write_into([str(after), after.nick, (str(after).split("#"))[1],after.status])
+    #    print("Before: {}".format(big_struct))
+    #    print("After: {}".format(big_struct))
 
 
     #@client.command()
