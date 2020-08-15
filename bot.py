@@ -8,7 +8,7 @@ def check_online(cli : commands.Bot) -> None:
     ''' Determines what members that the bot sees are online at the current hour and stores that info + their
         status into a datastructure (a list of dicts which has a key of string and a value of list of ints)'''
     now = datetime.datetime.now()
-    print(f"Checking who is online on {now.month}/{now.day}/{now.year} at {now.hour}:{now.minute}:{now.second}\n")
+    print(f"Checking who is online on {now.month}/{now.day}/{now.year} at {now.hour}:{now.minute}:{now.second}.")
 
     online_people = ""
 
@@ -37,9 +37,9 @@ def check_online(cli : commands.Bot) -> None:
 
     if online_people != "":
         online_people = online_people.rstrip(", ")
-        print("{} are online right now.".format(online_people))
+        print("{} are online right now.\n".format(online_people))
     else:
-        print("Nobody is online right now.")
+        print("Nobody is online right now.\n")
 
 
 def begin_phrase(msg, listA: list) -> bool:
@@ -77,10 +77,10 @@ if __name__ == "__main__":
         csv_shutdown()
 
 
-    @client.event
-    async def on_message_delete(message):
-        ''' Bot announces that somebody has deleted something. '''
-        await message.channel.send(f"{message.author.name} has hidden a message. ")
+    #@client.event
+    #async def on_message_delete(message):
+    #    ''' Bot announces that somebody has deleted something. '''
+    #    await message.channel.send(f"{message.author.name} has hidden a message. ")
 
 
     client.run(secretTextfile.__TOKEN__)
