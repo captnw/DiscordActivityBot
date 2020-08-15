@@ -8,7 +8,7 @@ import secretTextfile
 
 async def is_admin(context):
     for role in context.message.author.roles:
-        print(str(role), secretTextfile.__ADMIN_ROLE__ , type(role))
+        #print(str(role), secretTextfile.__ADMIN_ROLE__ , type(role))
         if (role.name == secretTextfile.__ADMIN_ROLE__ ):
             return True
     return False
