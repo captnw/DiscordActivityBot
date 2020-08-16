@@ -23,11 +23,8 @@ class admin_commands(commands.Cog):
         emoji = "\N{THUMBS UP SIGN}"
         await context.message.add_reaction(emoji)
         channel_members = ""    
-        #for member in context.message.channel.members:
-        #    channel_members += member.name + ", "
-        #    await context.send(f"{member.name}'s status is {member.status}")
-        #    await context.send(f"{member.name}'s color is {member.color}")
-        #    await context.send(f"{member.name}'s role is {member.roles}")
+        for member in context.message.channel.members:
+            channel_members += member.name + ", "
         channel_members = channel_members.rstrip(", ")
         await context.send(f"{channel_members} are in the channel")
     

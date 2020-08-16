@@ -8,11 +8,11 @@ def check_online(cli : commands.Bot) -> None:
     ''' Determines what members that the bot sees are online at the current hour and stores that info + their
         status into a datastructure (a list of dicts which has a key of string and a value of list of ints)'''
     now = datetime.datetime.now()
-    print(f"Checking who is online on {now.month}/{now.day}/{now.year} at {now.hour}:{now.minute}:{now.second}.")
+    print(f"Checking who is online on {now.month}/{now.day:02}/{now.year} at {now.hour:02}:{now.minute:02}:{now.second:02}.")
 
     online_people = ""
 
-    for member in sorted(client.get_all_members(), key = lambda x : str(x)):
+    for member in sorted(client.get_all_members(), key = lambda x : str(x).split("#")[0].lower()):
         if not (member.bot):
             member_name, member_id = str(member).split("#")
 

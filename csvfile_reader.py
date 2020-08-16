@@ -21,12 +21,15 @@ def csv_bootup() -> None:
     if path.exists(filename):
         with open(filename, "r") as csv_file_rd:
             reader = csv.DictReader(csv_file_rd, fieldnames= fields)
+            known_ids = set()
             for row in reader:
                 #print(f"{row.values()}")
-                if "_NAME" in row.values():
-                    # Do not copy the header into big_struct (avoid duplication)
+                user_id = row["_ID"]
+                if "_NAME" in row.values() or user_id in known_ids:
+                    # Do not copy the header into big_struct or any duplicate data belonging to the same id
                     continue
                 big_struct.append({field : (row[field] if field in row.keys() else "_NODATA") for field in fields})
+                known_ids.add(user_id)
    
 
 def csv_shutdown() -> None:
@@ -35,7 +38,7 @@ def csv_shutdown() -> None:
     with open(filename, "w+", newline='') as csv_file_wr:
         # Sort the list of dictionaries by name ...
         global big_struct
-        big_struct = sorted(big_struct, key = lambda dicta : dicta["_NAME"])
+        big_struct = sorted(big_struct, key = lambda dicta : dicta["_NAME"].split("#")[0].lower())
 
         # Then write the new stuff in the .csv file
         writer = csv.DictWriter(csv_file_wr, fieldnames= fields)
