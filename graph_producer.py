@@ -12,7 +12,7 @@ def produce_graph(data: list, id: str, name: str) -> None:
     zero_list = [0 for zero in range(24)]
     hour_x = [num for num in range(1, 25)]
     plt.scatter(hour_x, int_to_str(zero_list))
-    plt.title(f"{name}'s Active Hours on discord")
+    plt.title(f"{name}'s Active Hours on Discord")
     plt.xlabel(" Hours Online")
     plt.ylabel("Day")
     plt.xticks(hour_x)
