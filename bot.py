@@ -1,4 +1,4 @@
-import discord, secretTextfile, asyncio, datetime
+import discord, secretTextfile, asyncio, datetime, pytz
 from discord.ext import commands
 from csvfile_reader import csv_bootup, csv_shutdown, csv_write_into, csv_clear, csv_lookup_schedule
 from graph_producer import produce_graph
@@ -7,7 +7,8 @@ from graph_producer import produce_graph
 def check_online(cli : commands.Bot) -> None:
     ''' Determines what members that the bot sees are online at the current hour and stores that info + their
         status into a datastructure (a list of dicts which has a key of string and a value of list of ints)'''
-    now = datetime.datetime.now()
+    pacific = pytz.timezone("US/Pacific")
+    now = datetime.datetime.now(pacific)
     print(f"Checking who is online on {now.month}/{now.day:02}/{now.year} at {now.hour:02}:{now.minute:02}:{now.second:02}.")
 
     online_people = ""
@@ -37,7 +38,10 @@ def check_online(cli : commands.Bot) -> None:
 
     if online_people != "":
         online_people = online_people.rstrip(", ")
-        print("{} are online right now.\n".format(online_people))
+        if (online_people.find(",")):
+            print("{} are online right now.\n".format(online_people))
+        else:
+            print("{} is online right now.\n".format(online_people))
     else:
         print("Nobody is online right now.\n")
 
@@ -62,7 +66,8 @@ if __name__ == "__main__":
         print("Logged in as")
         print(client.user.name)
         print(client.user.id)
-        print('------')
+        print('------\n')
+        
         csv_bootup()
 
         while True:
@@ -75,13 +80,6 @@ if __name__ == "__main__":
     async def on_disconnect():
         print("Bot is now offline.")
         csv_shutdown()
-
-
-    #@client.event
-    #async def on_message_delete(message):
-    #    ''' Bot announces that somebody has deleted something. '''
-    #    await message.channel.send(f"{message.author.name} has hidden a message. ")
-
 
     client.run(secretTextfile.__TOKEN__)
     # DO NOT ADD CODE AFTER THIS B/C client.run NEVER RETURNS

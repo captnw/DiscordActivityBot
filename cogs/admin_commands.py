@@ -1,5 +1,5 @@
 from pathlib import Path
-import sys, datetime
+import sys
 sys.path.insert(1, str(Path.cwd()))
 
 from discord.ext import commands
@@ -17,9 +17,11 @@ class admin_commands(commands.Cog):
     def __init__(self, client):
         self.client = client
 
+
     @commands.command(aliases = ["m","M","members"])
     @commands.check(is_admin)
     async def Members(self, context):
+        """ Fetches all online members and prints them out """
         emoji = "\N{THUMBS UP SIGN}"
         await context.message.add_reaction(emoji)
         channel_members = ""    
@@ -39,7 +41,7 @@ class admin_commands(commands.Cog):
     @commands.command(aliases = ["die","Die","Shutdown"])
     @commands.check(is_admin)
     async def shutdown(self, context):
-        ''' Logs out the bot '''
+        """ Logs out the bot """
         emoji = "\N{THUMBS UP SIGN}"
         await context.message.add_reaction(emoji)
         await self.client.logout()
@@ -50,6 +52,7 @@ class admin_commands(commands.Cog):
         if isinstance(error, commands.CommandError):
             emoji = "\N{THUMBS DOWN SIGN}"
             await context.message.add_reaction(emoji)
+
 
 def setup(client):
     client.add_cog(admin_commands(client))

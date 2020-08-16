@@ -43,9 +43,15 @@ def csv_shutdown() -> None:
         # Then write the new stuff in the .csv file
         writer = csv.DictWriter(csv_file_wr, fieldnames= fields)
         writer.writeheader()
+        known_ids = set()
+
         for dicta in big_struct:
-            #print(dicta) # DEBUG PRINT
+            user_id = dicta["_ID"]
+            if user_id in known_ids: 
+                # Ignore duplicate IDs
+                continue
             writer.writerow(dicta)
+            known_ids.add(user_id)
 
 
 def csv_write_into(lista : list) -> None:
@@ -54,9 +60,10 @@ def csv_write_into(lista : list) -> None:
     nameExist = False
 
     for dicta in big_struct:
-        if dicta["_NAME"] == givenInfo[0]:
-            # Name already exists, so just modify the status and other information
-            for fieldnum in range(1,len(fields)):
+        if dicta["_ID"] == givenInfo[2]:
+            # ID already exists, so just modify the status and other information
+            for fieldnum in range(0,len(fields)):
+                if fieldnum == 2: continue # _ID, just continue
                 fieldname = fields[fieldnum]
                 dicta[fieldname] = givenInfo[fieldnum] if fieldnum < len(givenInfo) else "_NODATA"
             nameExist = True
@@ -90,16 +97,3 @@ def csv_lookup_schedule(id, current_day) -> list:
             #print("Name: {}, Data: {}".format(dicta["_NAME"],large_struct))
             return large_struct
     return [{current_day : [0 for num in range(24)]}]
-
-
-# Commands should probably go along this order (as seen below)
-if __name__ == "__main__":
-    csv_bootup()
-    csv_write_into(["james","phat","online"])
-    csv_write_into(["william","captnw", "dnd"])
-    csv_write_into(["james","phat", "stupid"])
-    csv_write_into(["autumn","james's dog", "sleeping"])
-    csv_shutdown()
-    csv_clear()
-
- 
