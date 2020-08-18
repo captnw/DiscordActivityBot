@@ -55,46 +55,49 @@ def begin_phrase(msg, listA: list) -> bool:
 
 
 if __name__ == "__main__":
+    normalShutdown = False
 
-    while True:
-        try:
-            client = commands.Bot(command_prefix = '!')
-            extensions = ["cogs.fun_commands", "cogs.admin_commands", "cogs.public_commands"]
-            for ext in extensions:
-                client.load_extension(ext)
-
-
-            @client.event
-            async def on_ready():
-                print("Logged in as")
-                print(client.user.name)
-                print(client.user.id)
-                print('------\n')
-                
-                csv_bootup()
-
-                countdown = 0; # In minutes
-
-                while True:
-                    if countdown >= 1: 
-                        csv_shutdown()
-                        await client.logout()
-                        break
-
-                    check_online(client)
-                    # Every 1 minute
-                    await asyncio.sleep(60)
-                    countdown = countdown + 1; 
+    try:
+        client = commands.Bot(command_prefix = '!')
+        extensions = ["cogs.fun_commands", "cogs.admin_commands", "cogs.public_commands"]
+        for ext in extensions:
+            client.load_extension(ext)
 
 
-            @client.event
-            async def on_disconnect():
-                print("Bot is now offline.")
-                csv_shutdown()
+        @client.event
+        async def on_ready():
+            print("Logged in as")
+            print(client.user.name)
+            print(client.user.id)
+            print('------\n')
+            
+            csv_bootup()
 
-            client.run(secretTextfile.__TOKEN__)
-            # DO NOT ADD CODE AFTER THIS B/C client.run NEVER RETURNS
-        except Exception as e:
-            print(e)
-        finally:
+            countdown = 0; # In minutes
+
+            while True:
+                if countdown >= 60: 
+                    await client.logout()
+                    print("Shutting down to save data...")
+                    break
+
+                check_online(client)
+                # Every 5 minute
+                await asyncio.sleep(300)
+                countdown = countdown + 5; 
+
+
+        @client.event
+        async def on_disconnect():
+            print("Bot is now offline.")
             csv_shutdown()
+            normalShutdown = True
+
+        client.run(secretTextfile.__TOKEN__, reconnect = True)
+        # DO NOT ADD CODE AFTER THIS B/C client.run NEVER RETURNS
+        
+    except Exception as e:
+        print(e)
+
+    if not normalShutdown:
+        csv_shutdown()
