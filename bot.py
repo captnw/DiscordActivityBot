@@ -57,39 +57,44 @@ def begin_phrase(msg, listA: list) -> bool:
 if __name__ == "__main__":
 
     while True:
-        client = commands.Bot(command_prefix = '!')
-        extensions = ["cogs.fun_commands", "cogs.admin_commands", "cogs.public_commands"]
-        for ext in extensions:
-            client.load_extension(ext)
+        try:
+            client = commands.Bot(command_prefix = '!')
+            extensions = ["cogs.fun_commands", "cogs.admin_commands", "cogs.public_commands"]
+            for ext in extensions:
+                client.load_extension(ext)
 
 
-        @client.event
-        async def on_ready():
-            print("Logged in as")
-            print(client.user.name)
-            print(client.user.id)
-            print('------\n')
-            
-            csv_bootup()
+            @client.event
+            async def on_ready():
+                print("Logged in as")
+                print(client.user.name)
+                print(client.user.id)
+                print('------\n')
+                
+                csv_bootup()
 
-            countdown = 0; # In minutes
+                countdown = 0; # In minutes
 
-            while True:
-                if countdown >= 1: 
-                    csv_shutdown()
-                    await client.logout()
-                    break
+                while True:
+                    if countdown >= 1: 
+                        csv_shutdown()
+                        await client.logout()
+                        break
 
-                check_online(client)
-                # Every 1 minute
-                await asyncio.sleep(60)
-                countdown = countdown + 1; 
+                    check_online(client)
+                    # Every 1 minute
+                    await asyncio.sleep(60)
+                    countdown = countdown + 1; 
 
 
-        @client.event
-        async def on_disconnect():
-            print("Bot is now offline.")
+            @client.event
+            async def on_disconnect():
+                print("Bot is now offline.")
+                csv_shutdown()
+
+            client.run(secretTextfile.__TOKEN__)
+            # DO NOT ADD CODE AFTER THIS B/C client.run NEVER RETURNS
+        except Exception as e:
+            print(e)
+        finally:
             csv_shutdown()
-
-        client.run(secretTextfile.__TOKEN__)
-        # DO NOT ADD CODE AFTER THIS B/C client.run NEVER RETURNS
