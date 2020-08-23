@@ -3,10 +3,12 @@ import os.path
 from os import path
 
 filename = "private_data.csv"
-fields = ["_NAME", "_NICKNAME", "_ID", "_STATUS", "_SCHEDULE"]
+fields = ["_NAME", "_NICKNAME", "_ID", "_GUILD", "_STATUS", "_SCHEDULE"]
 
 clear_safety = True # You're going to have to manually set this to false before calling the clear() function
 big_struct = [] # This will store + update all of the user info while the bot is still active
+online_freq = {} # This will store the frequency/amount of people who are online at certain hours in a week
+# TODO make online_freq a dict of lists ... key is the servername
 
 
 # Note to anyone reading this
@@ -87,13 +89,33 @@ def csv_clear() -> bool:
         print("CVS FILE HAS BEEN CLEARED.")
     return not clear_safety
 
-
+ 
 def csv_lookup_schedule(id, current_day) -> list:
-    ''' Return someone's 24 hour activity which is denoted by a list of boolean values (true/false means
+    ''' Return someone's 24 hour activity (for n days, up to 10 days) which is denoted by a list of boolean values (true/false means
         active for the hour at the index+1th hour). Otherwise returns a list of size 24 all set to false'''
     for dicta in big_struct:
         if dicta["_ID"] == id:
-            large_struct = ast.literal_eval(dicta["_SCHEDULE"])
+            online_history = ast.literal_eval(dicta["_SCHEDULE"])
             #print("Name: {}, Data: {}".format(dicta["_NAME"],large_struct))
-            return large_struct
+            return online_history
     return [{current_day : [0 for num in range(24)]}]
+
+
+def csv_all_schedule() -> list:
+    ''' Updates the list in online_freq that represent how many people are online at each hour for the last 7 days in a specific server '''
+    # note: we're not going to consider the other 3 days since the data would overrepresent those 3 days
+    # and we would like an accurate representation of the frequency of online users during a "normal week"
+    global online_freq
+
+    for dicta in big_struct:
+        if not (dicta["_GUILD"] in online_freq):
+            online_freq[dicta["_GUILD"]] = [0 for num in range(24)]
+
+        online_history = ast.literal_eval(dicta["_SCHEDULE"])
+        for numdicto, dicto in enumerate(online_history, start=1):
+            if numdicto <= 7:
+                # only count data up to the previous 7th day
+                online_hours = list(dicto.values())[0]
+                for hr, isOnline in enumerate(online_hours):
+                    if isOnline != 0:
+                        online_freq[dicta["_GUILD"]][hr] += 1

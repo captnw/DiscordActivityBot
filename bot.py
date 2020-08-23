@@ -1,13 +1,13 @@
 import discord, secretTextfile, asyncio, datetime, pytz
 from discord.ext import commands
-from csvfile_reader import csv_bootup, csv_shutdown, csv_write_into, csv_clear, csv_lookup_schedule
-from graph_producer import produce_graph
+from csvfile_reader import csv_bootup, csv_shutdown, csv_write_into, csv_clear, csv_lookup_schedule, csv_all_schedule
+from graph_producer import produce_graph, produce_graph_bar
 
 
 def check_online(cli : commands.Bot) -> None:
     ''' Determines what members that the bot sees are online at the current hour and stores that info + their
         status into a datastructure (a list of dicts which has a key of string and a value of list of ints)'''
-    pacific = pytz.timezone("US/Pacific")
+    pacific = pytz.timezone("US/Pacific") # The timezone being used to record the hour
     now = datetime.datetime.now(pacific)
     print(f"Checking who is online on {now.month}/{now.day:02}/{now.year} at {now.hour:02}:{now.minute:02}:{now.second:02}.")
 
@@ -18,7 +18,7 @@ def check_online(cli : commands.Bot) -> None:
             member_name, member_id = str(member).split("#")
 
             # Fetching all other data excluding schedule
-            member_data = [str(member), str(member.nick), member_id,str(member.status)]
+            member_data = [str(member), str(member.nick), member_id, str(hash(member.guild)), str(member.status)]
             old_schedule = csv_lookup_schedule(member_id, now.day)
 
             if not (now.day in old_schedule[-1].keys()):
@@ -36,6 +36,8 @@ def check_online(cli : commands.Bot) -> None:
             member_data.append(str(old_schedule))
             csv_write_into(member_data)
 
+    csv_all_schedule() # update the online frequency list
+
     if online_people != "":
         online_people = online_people.rstrip(", ")
         if (online_people.find(",")):
@@ -44,14 +46,6 @@ def check_online(cli : commands.Bot) -> None:
             print("{} is online right now.\n".format(online_people))
     else:
         print("Nobody is online right now.\n")
-
-
-def begin_phrase(msg, listA: list) -> bool:
-    ''' Helper function to check for alias, returns bool '''
-    returnVal = False
-    for alias in listA:
-        returnVal = returnVal or msg.content.startswith(alias)
-    return returnVal
 
 
 if __name__ == "__main__":

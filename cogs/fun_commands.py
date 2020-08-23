@@ -15,7 +15,6 @@ class fun_commands(commands.Cog):
         """ Say hi to the bot. """
         await context.send(f"Hello {context.message.author.mention}")
     
-
     @commands.command(aliases = ["8ball","8b","eightball"])
     async def Eightball(self, context):
         """ Ask a yes/no question and recieve a (helpful?) answer. """
@@ -28,18 +27,6 @@ class fun_commands(commands.Cog):
         ]
         await context.send(responses[random.randint(0, len(responses)-1)])
 
-
-    @commands.command(aliases = ["wastetime"])
-    async def Wastetime(self, context):
-        """ Does absolutely nothing. """
-        pass
-
-
-    #@commands.command(aliases = ["spam"])
-    #async def Spam(self, context):
-    #    while True:
-    #        await asyncio.sleep(2)
-    #        await context.send("You just got friccin bean'd moron!")
 
 def setup(client):
     client.add_cog(fun_commands(client))

@@ -29,7 +29,7 @@ def produce_graph(data: list, id: str, name: str) -> None:
     plt.style.use('seaborn')
     plt.scatter(hour_x, int_to_str(zero_list))
     plt.title(f"{name}'s Active Hours on Discord")
-    plt.xlabel(" Hours Online")
+    plt.xlabel("Hours Online")
     plt.ylabel("Day")
     plt.xticks(hour_x, cat_time, size=6.5)
 
@@ -43,3 +43,19 @@ def produce_graph(data: list, id: str, name: str) -> None:
     plt.savefig(f"./graph_folder/{id}.png")
     plt.close()
 
+def produce_graph_bar(data_hours: list) -> None:
+    ''' Given a list of ints, makes a bar graph png that displays the cumulative hours of all users online '''
+    data_hours = move_last(data_hours); # move the last data to the front of the list so that we start with 12 AM
+    cat_time = ['12AM','1AM','2AM','3AM','4AM','5AM','6AM','7AM','8AM','9AM','10AM','11AM','12PM',
+                '1PM','2PM','3PM','4PM','5PM','6PM','7PM','8PM','9PM','10PM','11PM']
+    hour_x = int_to_str([24,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23])
+
+    plt.style.use('seaborn')
+    plt.bar(hour_x, data_hours, align = "center")
+    plt.title("Cumulative activity for the past 7 days") # Will rename this to "Server activity" once I've fixed this problem
+    plt.xlabel("Hours (AM/PM)")
+    plt.ylabel("People online")
+    plt.xticks(hour_x, cat_time, size = 6.5)
+
+    plt.savefig("./graph_folder/OnlineFrequency.png")
+    plt.close()
