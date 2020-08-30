@@ -1,6 +1,6 @@
 import discord, secretTextfile, asyncio, datetime, pytz
 from discord.ext import commands
-from csvfile_reader import csv_bootup, csv_shutdown, csv_write_into, csv_clear, csv_lookup_schedule, csv_all_schedule
+from csvfile_reader import csv_bootup, csv_shutdown, csv_write_into, csv_clear, csv_lookup_schedule, csv_all_schedule, csv_order_data
 from graph_producer import produce_graph, produce_graph_bar
 
 
@@ -9,18 +9,16 @@ def check_online(cli : commands.Bot) -> None:
         status into a datastructure (a list of dicts which has a key of string and a value of list of ints)'''
     pacific = pytz.timezone("US/Pacific") # The timezone being used to record the hour
     now = datetime.datetime.now(pacific)
-    print(f"Checking who is online on {now.month}/{now.day:02}/{now.year} at {now.hour:02}:{now.minute:02}:{now.second:02}.")
+    print(f"Checking who is online on {now.month}/{now.day:02}/{now.year} at {now.hour:02}:{now.minute:02}:{now.second:02} PST.")
 
     online_people = ""
 
     for member in sorted(client.get_all_members(), key = lambda x : str(x).split("#")[0].lower()):
         if not (member.bot):
-            member_name, member_id = str(member).split("#")
-
             # Fetching all other data excluding schedule
-            member_data = [str(member), str(member.nick), member_id, str(hash(member.guild)), str(member.status)]
-            old_schedule = csv_lookup_schedule(member_id, now.day)
-
+            # If added new labels, MUST ADD NEW KEY AND VALUE BELOW FOR AFOREMENTIONED LABELS
+            unordered_data = {"_NAME":str(member), "_NICKNAME":str(member.nick), "_ID":member.id, "_GUILD":str(hash(member.guild)), "_STATUS":str(member.status)}
+            old_schedule = csv_lookup_schedule(member.id, now.day)
             if not (now.day in old_schedule[-1].keys()):
                 # Consider making a new dict if today is different
                 if len(old_schedule) == 10:
@@ -32,8 +30,10 @@ def check_online(cli : commands.Bot) -> None:
             if str(member.status) != "offline":
                 # If the member is not offline, update the current hour
                 old_schedule[-1][now.day][now.hour-1] = old_schedule[-1][now.day][now.hour-1] | 1
-                online_people += member_name + ", "
-            member_data.append(str(old_schedule))
+                online_people += member.name + ", "
+
+            unordered_data["_SCHEDULE"] = str(old_schedule)
+            member_data = csv_order_data(unordered_data)
             csv_write_into(member_data)
 
     csv_all_schedule() # update the online frequency list
@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
         @client.event
         async def on_ready():
-            print("Logged in as")
+            print("Logged in as:")
             print(client.user.name)
             print(client.user.id)
             print('------\n')
@@ -71,8 +71,8 @@ if __name__ == "__main__":
 
             while True:
                 if countdown >= 60: 
-                    await client.logout()
                     print("Shutting down to save data...")
+                    await client.logout()
                     break
 
                 check_online(client)
@@ -91,7 +91,7 @@ if __name__ == "__main__":
         # DO NOT ADD CODE AFTER THIS B/C client.run NEVER RETURNS
         
     except Exception as e:
-        print(e)
+        print("Error caught! Error description is shown below...\n{}".format(e))
 
     if not normalShutdown:
         csv_shutdown()
