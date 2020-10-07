@@ -1,5 +1,5 @@
 from discord.ext import commands
-import asyncio, random
+import random
 
 class fun_commands(commands.Cog):
     def __init__(self, client):

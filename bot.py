@@ -1,10 +1,9 @@
-import discord, secretTextfile, asyncio, datetime, pytz
+import secretTextfile, asyncio, datetime, pytz
 from discord.ext import commands
-from csvfile_reader import csv_bootup, csv_shutdown, csv_write_into, csv_clear, csv_lookup_schedule, csv_all_schedule, csv_order_data
-from graph_producer import produce_graph, produce_graph_bar
+from csvfile_reader import csv_bootup, csv_shutdown, csv_write_into, csv_lookup_schedule, csv_all_schedule, csv_order_data
 
 
-def check_online(cli : commands.Bot) -> None:
+def check_online() -> None:
     ''' Determines what members that the bot sees are online at the current hour and stores that info + their
         status into a datastructure (a list of dicts which has a key of string and a value of list of ints)'''
     pacific = pytz.timezone("US/Pacific") # The timezone being used to record the hour
@@ -75,7 +74,7 @@ if __name__ == "__main__":
                     await client.logout()
                     break
 
-                check_online(client)
+                check_online()
                 # Every 5 minute
                 await asyncio.sleep(300)
                 countdown = countdown + 5; 
@@ -85,6 +84,7 @@ if __name__ == "__main__":
         async def on_disconnect():
             print("Bot is now offline.")
             csv_shutdown()
+            global normalShutdown
             normalShutdown = True
 
         client.run(secretTextfile.__TOKEN__, reconnect = True)

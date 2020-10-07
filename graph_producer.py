@@ -1,14 +1,15 @@
 import matplotlib.pyplot as plt
 
-
 def activity_converter(hour : list, day : int) -> list:
     '''Given a list of bools and an int it will convert
        all True values in that list into the given int'''
     return [day if time == True else 0 for time in hour]
 
+
 def int_to_str(int_list : list) -> list:
     '''Takes a list of ints and converts them into a list of stirngs'''
     return [str(item) if item != 0 else str(0) for item in int_list]
+
 
 def move_last(int_list: list) -> list:
     '''Takes the last element and moves it to the front'''
@@ -16,6 +17,7 @@ def move_last(int_list: list) -> list:
     int_list.pop(-1)
     int_list.insert(0, last)
     return int_list
+
 
 def produce_graph(data: list, id: str, name: str) -> None:
     '''Given a list, id, and name it outputs a png that
@@ -42,6 +44,7 @@ def produce_graph(data: list, id: str, name: str) -> None:
     plt.scatter(hour_x, int_to_str(zero_list), color="white")
     plt.savefig(f"./graph_folder/UserAct_{id}.png")
     plt.close()
+
 
 def produce_graph_bar(data_hours: list, guild_name: str, guild_hash: str, days_recorded: int) -> None:
     ''' Given a list of ints, makes a bar graph png that displays the cumulative hours of all users online '''
