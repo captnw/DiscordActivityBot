@@ -1,0 +1,9 @@
+// Goals for this test branch //
+
+TODO:
+- Change from .csv file storage to .db file storage (using sqlite3)
+- Make the bot timezone agnostic (store things by UTC ... then give users Pacific time by default (they ccan request other timezones))
+- Don't store names and hash the user's ID somehow to give the data a basic encrytption (for privacy)
+- Make bot DM pictures to users by default (they can specify an argument that they want the image to be posted in the server)
+- Rewrite documentation (for bot hints AND on github repo (on setting up this bot))
+- Host bot using Heroku (free for small projects ... very similar to AWS that you have to login via console)
