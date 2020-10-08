@@ -1,9 +1,21 @@
-import secretTextfile, asyncio, datetime, pytz
-from discord.ext import commands
+import secretTextfile, asyncio, datetime, pytz, sqlite3
+#from discord.ext import commands
+from discord.ext.commands import Bot as BotBase
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 from csvfile_reader import csv_bootup, csv_shutdown, csv_write_into, csv_lookup_schedule, csv_all_schedule, csv_order_data
+import sqlite_handler
 
+from glob import glob
+# in this experimental branch, we're switching from csv to .db (using sqlite3)
+# we will also be using (asyncpg) so that we can utilize PostgreSQL so that we can use heroku to host our bot
 
-def check_online() -> None:
+# A lot of code borrowed from Carberra Tutorials (thank you!)
+COGS = [path.split("\\")[-1][:-3] for path in glob("./cogs/*.py")] # Fetch cog files
+VERSION = "0.5.0" # Bot version
+
+# OLD CSV stuff
+def check_online(client) -> None:
     ''' Determines what members that the bot sees are online at the current hour and stores that info + their
         status into a datastructure (a list of dicts which has a key of string and a value of list of ints)'''
     pacific = pytz.timezone("US/Pacific") # The timezone being used to record the hour
@@ -47,51 +59,59 @@ def check_online() -> None:
         print("Nobody is online right now.\n")
 
 
+class Bot(BotBase):
+    def __init__(self):
+        self.ready = False
+        self.scheduler = AsyncIOScheduler()
+
+        #sqlite_handler.test_print(self.scheduler)
+        super().__init__(command_prefix='!')
+
+    def setup(self):
+        # LOAD COGS
+        for cog in COGS:
+            self.load_extension(f"cogs.{cog}")
+            print(f"{cog} cog loaded")
+
+        print("Cog setup complete")
+
+    def run(self, version):
+        self.VERSION = version
+        print("Running ScheduleBot ver "+version)
+        print("Setting up cogs...")
+        self.setup()
+        self.TOKEN = secretTextfile.__TOKEN__
+
+        print("Loading .csv stuff")
+        csv_bootup()
+
+        print("Running bot...")
+        super().run(self.TOKEN, reconnect=True)
+
+    async def on_connect(self):
+        print("Bot connected.")
+
+    async def on_disconnect(self):
+        print("Bot disconnected.")
+        print("Closing .csv file...")
+        csv_shutdown()
+
+    async def on_ready(self):
+        if not self.ready:
+            self.ready = True
+            self.scheduler.add_job(lambda: check_online(self), IntervalTrigger(seconds=30))
+            self.scheduler.start()
+
+        else:
+            print("Bot reconnected")
+
+
+bot = Bot()
+
 if __name__ == "__main__":
-    normalShutdown = False
-
     try:
-        client = commands.Bot(command_prefix = '!')
-        extensions = ["cogs.fun_commands", "cogs.admin_commands", "cogs.public_commands"]
-        for ext in extensions:
-            client.load_extension(ext)
-
-
-        @client.event
-        async def on_ready():
-            print("Logged in as:")
-            print(client.user.name)
-            print(client.user.id)
-            print('------\n')
-            
-            csv_bootup()
-
-            countdown = 0; # In minutes
-
-            while True:
-                if countdown >= 60: 
-                    print("Shutting down to save data...")
-                    await client.logout()
-                    break
-
-                check_online()
-                # Every 5 minute
-                await asyncio.sleep(300)
-                countdown = countdown + 5; 
-
-
-        @client.event
-        async def on_disconnect():
-            print("Bot is now offline.")
-            csv_shutdown()
-            global normalShutdown
-            normalShutdown = True
-
-        client.run(secretTextfile.__TOKEN__, reconnect = True)
-        # DO NOT ADD CODE AFTER THIS B/C client.run NEVER RETURNS
-        
+        bot.run(VERSION)
     except Exception as e:
         print("Error caught! Error description is shown below...\n{}".format(e))
-
-    if not normalShutdown:
+        print("Closing .csv file...")
         csv_shutdown()

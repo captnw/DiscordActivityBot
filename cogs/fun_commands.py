@@ -10,10 +10,12 @@ class fun_commands(commands.Cog):
         """ See your own ping. """
         await context.send(f"{int(self.client.latency*1000)}ms")
 
+
     @commands.command(aliases = ["Hello","Hi","hi"])
     async def hello(self, context):
         """ Say hi to the bot. """
         await context.send(f"Hello {context.message.author.mention}")
+    
     
     @commands.command(aliases = ["8ball","8b","eightball"])
     async def Eightball(self, context):
