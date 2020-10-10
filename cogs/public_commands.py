@@ -6,7 +6,7 @@ import sys, datetime
 sys.path.insert(1, str(Path.cwd()))
 
 from csvfile_reader import csv_lookup_schedule, online_freq
-from graph_producer import produce_graph, produce_graph_bar
+#from graph_producer import produce_graph, produce_graph_bar
 
 
 class public_commands(commands.Cog):
@@ -22,16 +22,16 @@ class public_commands(commands.Cog):
         pacific = pytz.timezone("US/Pacific") # The timezone being used to record the hour
         now = datetime.datetime.now(pacific)
         lista = csv_lookup_schedule(user_id, now.day)
-        produce_graph(lista, user_id, user_name)
+        #produce_graph(lista, user_id, user_name)
         
-        image_message = await context.send(file=discord.File(f"./graph_folder/UserAct_{user_id}.png"))
+        #image_message = await context.send(file=discord.File(f"./graph_folder/UserAct_{user_id}.png"))
 
         # Delete the image 1min, 30 seconds after sending it to prevent clogging up space
-        await asyncio.sleep(90)
-        await image_message.delete()
+        #await asyncio.sleep(90)
+        #await image_message.delete()
         
-        emoji = "\N{GEAR}"
-        await context.message.add_reaction(emoji)
+        #emoji = "\N{GEAR}"
+        #await context.message.add_reaction(emoji)
 
 
     @commands.command(aliases = ["Serveractivity", "serverActivity", "ServerActivity", "sa", "SA"])
@@ -40,15 +40,15 @@ class public_commands(commands.Cog):
         guild_hash = str(hash(context.message.author.guild))
         guild_name = str(context.message.guild.name)
         days_data_recorded = online_freq[guild_hash]["_DAYS"]
-        produce_graph_bar(online_freq[guild_hash]["_FREQ"], guild_name, guild_hash, days_data_recorded) # Get the respective freq graph for the server
-        image_message = await context.send(file=discord.File(f"./graph_folder/GuildAct_{guild_hash}.png"))
+        #produce_graph_bar(online_freq[guild_hash]["_FREQ"], guild_name, guild_hash, days_data_recorded) # Get the respective freq graph for the server
+        #image_message = await context.send(file=discord.File(f"./graph_folder/GuildAct_{guild_hash}.png"))
 
         # Delete the image 1min, 30 seconds after sending it to prevent clogging up space
-        await asyncio.sleep(90)
-        await image_message.delete()
+        #await asyncio.sleep(90)
+        #await image_message.delete()
 
-        emoji = "\N{GEAR}"
-        await context.message.add_reaction(emoji)
+        #emoji = "\N{GEAR}"
+        #await context.message.add_reaction(emoji)
 
 
 def setup(client):
