@@ -1,6 +1,5 @@
 from ast import literal_eval as astEVAL
 from sqlite3 import connect as sqlite3CONNECT
-from math import ceil as mathCEIL
 # This file handles the storing and moving of schedule data between the data.sqlite file and the bot
 
 sql_filename = "data"
@@ -33,7 +32,7 @@ def average_freq_graph() -> None:
     for guild_hash in online_freq:
         num_days = int(online_freq[guild_hash]["DAYS"])
         if (num_days >= 2):
-            online_freq[guild_hash]["FREQ"] = [mathCEIL(num/num_days) for num in online_freq[guild_hash]["FREQ"]]
+            online_freq[guild_hash]["FREQ"] = [round(num/num_days) for num in online_freq[guild_hash]["FREQ"]]
 
 
 def fetch_guild_hashes(member_id: int, current_guild_id: int) -> list:

@@ -3,9 +3,12 @@
 TODO:
 -1) Change from .csv file storage to .db file storage (using sqlite3) [DONE]
 -1.5) FIX COMMANDS [DONE]
--2) Make the bot timezone agnostic (store things by UTC ... then give users UTC time by default (they can request other timezones))
+-1.75) Work on the countdown (next check in ...) for bot [DONE]
+-2) Make the bot timezone agnostic (store things by UTC ... then give users UTC time by default (they can request other timezones)) [DONE]
 -3) Make bot DM pictures to users by default (they can specify an argument that they want the image to be posted in the server) [DONE]
 -4) Don't store names and hash the user's ID somehow to give the data a basic encrytption (for privacy)
 -5) Rewrite documentation (for bot hints AND on github repo (on setting up this bot))
+
+
 -6?) Host bot using Heroku (free for small projects ... very similar to AWS that you have to login via console)
 -6.5?) # we will also be using (asyncpg) so that we can utilize PostgreSQL so that we can use heroku to host our bot

@@ -2,7 +2,9 @@ from asyncio import sleep as asyncioSLEEP
 from discord import File as discordFILE
 from discord.ext import commands
 from pathlib import Path
+from pytz import UTC as pytzUTC
 from sys import path as sysPATH
+
 sysPATH.insert(1, str(Path.cwd()))
 
 from graph_producer import produce_user_graph, produce_server_graph
@@ -23,28 +25,33 @@ class public_commands(commands.Cog):
         user_name = str(context.message.author).split("#")[0]
         user_id = context.message.author.id
         user_tz = fetch_timezone(user_id)
-        now = timezones.DateTime.now(timezones.pytzTIMEZONE(user_tz)) # current time according to timezone tzone
 
-        lista = fetch_schedule(user_id, timezones.pytzUTC)
-        produce_user_graph(lista, user_id, user_name, user_tz)
+        lista = fetch_schedule(user_id, pytzUTC)
+        adjusted_lista = timezones.adjust_schedule_timezone(lista, user_tz)
+        produce_user_graph(adjusted_lista, user_id, user_name, user_tz)
         
         if private == "False" or private == "false":
             image_message = await context.send(file=discordFILE(f"./graph_folder/UserAct_{user_id}.png"))
             emoji = "\N{THUMBS UP SIGN}"
-            await context.message.add_reaction(emoji) # React with success
-
-            # Delete the image 1min, 30 seconds after sending it to prevent clogging up space
-            await asyncioSLEEP(90)
+            
             try:
+                await context.message.add_reaction(emoji) # React with success
+                # Delete the image 1min, 30 seconds after sending it to prevent clogging up space
+                await asyncioSLEEP(90)
                 await image_message.delete()
             except Exception as _:
-                # The image has already been deleted, do nothing.
+                # User has deleted their own message before bot can react to it.
+                # Or the image has already been deleted, do nothing.
                 pass
         else:
             # DM the user with the image, no need to delete the image.
             image_message = await context.message.author.send(file=discordFILE(f"./graph_folder/UserAct_{user_id}.png"))
             emoji = "\N{THUMBS UP SIGN}"
-            await context.message.add_reaction(emoji) # React with success
+            try:
+                await context.message.add_reaction(emoji) # React with success
+            except Exception as _:
+                # User has deleted their own message before bot can react to it.
+                pass
 
 
     @commands.command(aliases = ["Serveractivity", "serverActivity", "ServerActivity", "sa", "SA"])
@@ -55,53 +62,63 @@ class public_commands(commands.Cog):
             guild_hash = hash(context.message.author.guild)
             guild_name = str(context.message.guild.name)
             days_data_recorded = online_freq[guild_hash]["DAYS"]
-            now = timezones.DateTime.now(timezones.pytzTIMEZONE(tz)) # current time according to timezone tzone
+            adjusted_freq_graph = timezones.adjust_server_frequency_timezone(online_freq[guild_hash]["FREQ"], tz)
 
-            produce_server_graph(online_freq[guild_hash]["FREQ"], guild_name, guild_hash, days_data_recorded, tz) # Get the respective freq graph for the server
+            produce_server_graph(adjusted_freq_graph, guild_name, guild_hash, days_data_recorded, tz) # Get the respective freq graph for the server
             image_message = await context.send(file=discordFILE(f"./graph_folder/GuildAct_{guild_hash}.png"))
             emoji = "\N{THUMBS UP SIGN}"
-            await context.message.add_reaction(emoji) # React with success
-
-            # Delete the image 1min, 30 seconds after sending it to prevent clogging up space
-            await asyncioSLEEP(90)
             try:
+                await context.message.add_reaction(emoji) # React with success
+                # Delete the image 1min, 30 seconds after sending it to prevent clogging up space
+                await asyncioSLEEP(90)
                 await image_message.delete()
             except Exception as _:
-                # The image has already been deleted, do nothing.
+                # User has deleted their own message before bot can react to it.
+                # Or, the image has already been deleted, do nothing.
                 pass
         else:
             await context.send("Invalid timezone. Say =tz for valid timezones.")
             emoji = "\N{THUMBS DOWN SIGN}"
-            await context.message.add_reaction(emoji)
+            try:
+                await context.message.add_reaction(emoji)
+            except Exception as _:
+                # User has deleted their own message before bot can react to it.
+                pass
+
+
+    @commands.command(aliases = ["GetTimeZone", "GetTZ", "Gettz", "gettz"])
+    async def gettimezone(self, context):
+        ''' See what is your personal timezone (the bot will direct message you)'''
+        user_tz = fetch_timezone(context.message.author.id)
+        await context.message.author.send(f"Your timezone is currently: {user_tz}\n")
 
 
     @commands.command(aliases = ["SetTimeZone", "SetTZ", "Settz", "settz"])
     async def settimezone(self, context, tz="UTC"):
-        ''' Set your personal timezone for "myactivity" command. '''
+        ''' Set your personal timezone for "myactivity" command. If you don't know what timezone
+            to set as, you can try saying: "=timezone" to check all valid timezones. '''
+        emoji = "\N{THUMBS UP SIGN}"
         if tz in timezones.valid_timezones:
             replace_timezone(context.message.author.id, tz)
-            emoji = "\N{THUMBS UP SIGN}"
-            await context.message.add_reaction(emoji)
         else:
             await context.send("Invalid timezone. Say =tz for valid timezones.")
             emoji = "\N{THUMBS DOWN SIGN}"
-            await context.message.add_reaction(emoji)
+        await context.message.add_reaction(emoji)
 
 
     @commands.command(aliases = ["Timezones", "timeZones", "TimeZones", "TZ", "tz"])
     async def timezones(self, context, option="main"):
         ''' Display a list of all of the valid timezones for the "myactivity" and "serveractivity" command.
             The second argument is "main" so you can list all of the main timezones, or the name of any regional continent. '''
+        message_sent = ""
         if option == "main":
-            await context.send("Universal timezones:")
-            await context.send("|| "+timezones.universalTimeZoneFormatted)
-            await context.send("Continents (Say =tz {continent name} for more specific timezones):")
-            await context.send("|| "+timezones.continentsFormatted)
+            message_sent = "Universal timezones:\n| "+timezones.universalTimeZoneFormatted+"\nContinents (Say =tz {continent name} for more specific timezones):\n"
+            message_sent += "| "+timezones.continentsFormatted+"\n"
         elif option in timezones.mainTimeZonesClean:
-            await context.send(f"{option} Timezones:")
-            await context.send("|| "+(", ".join([item for item in timezones.common_timezones_set if item.split("/",1)[0] == option])).rstrip(", "))
+            message_sent = f"{option} Timezones:\n| "+(", ".join([item for item in timezones.common_timezones_set if item.split("/",1)[0] == option])).rstrip(", ")
         else:
-            await context.send("Invalid option/continent")
+            message_sent = "Invalid option/continent"
+        await context.send(message_sent)
 
 
 def setup(client):
