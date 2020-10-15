@@ -4,8 +4,11 @@ from sqlite3 import connect as sqlite3CONNECT
 
 sql_filename = "data"
 sql_filenameFULL = sql_filename+".sqlite"
-data_fields = [("NAME","TEXT DEFAULT None"), ("ID","INT PRIMARY KEY DEFAULT -1"), ("GUILD_HASH_LIST","TEXT DEFAULT None"), 
+
+data_fields = [("HASHED_ID","TEXT PRIMARY KEY DEFAULT None"), ("GUILD_HASH_LIST","TEXT DEFAULT None"), 
     ("STATUS","TEXT DEFAULT None"), ("TIMEZONE", "TEXT DEFAULT UTC"), ("SCHEDULE","TEXT DEFAULT None")]
+HASHED_ID_INDEX = 0
+GUILD_HASH_LIST_INDEX = 1
 
 online_freq = {} # This will store the frequency/amount of people who are online in any server at certain hours in a week.
                  # Key: guild hash str, Value: a dict with keyval pair DAYS str:int and keyval pair FREQ str:[int (size 24)]
@@ -35,11 +38,11 @@ def average_freq_graph() -> None:
             online_freq[guild_hash]["FREQ"] = [round(num/num_days) for num in online_freq[guild_hash]["FREQ"]]
 
 
-def fetch_guild_hashes(member_id: int, current_guild_id: int) -> list:
+def fetch_guild_hashes(member_id: str, current_guild_id: int) -> list:
     ''' Return the guild_hashes for the guilds that the user belongs to '''
     db = sqlite3CONNECT(sql_filenameFULL)
     cursor = db.cursor()
-    cursor.execute(f"SELECT GUILD_HASH_LIST FROM {sql_filename} WHERE ID=?",(member_id,))
+    cursor.execute(f"SELECT GUILD_HASH_LIST FROM {sql_filename} WHERE HASHED_ID=?",(member_id,))
     guild_hashlist = cursor.fetchone()
     cursor.close()
     db.close()
@@ -52,12 +55,12 @@ def fetch_guild_hashes(member_id: int, current_guild_id: int) -> list:
         return list((current_guild_id,))
 
 
-def fetch_schedule(member_id: int, current_day: int, guild_hash_list: list = []) -> list:
+def fetch_schedule(member_id: str, current_day: int, guild_hash_list: list = []) -> list:
     ''' Return someone's 24 hour activity (for n days, up to 10 days) which is denoted by a list of boolean values (true/false means
         active for the hour at the index+1th hour). Otherwise returns a list of size 24 all set to false'''
     db = sqlite3CONNECT(sql_filenameFULL)
     cursor = db.cursor()
-    cursor.execute(f"SELECT SCHEDULE FROM {sql_filename} WHERE ID=?",(member_id,))
+    cursor.execute(f"SELECT SCHEDULE FROM {sql_filename} WHERE HASHED_ID=?",(member_id,))
     sched = cursor.fetchone()
     cursor.close()
     db.close()
@@ -96,15 +99,16 @@ def fetch_schedule(member_id: int, current_day: int, guild_hash_list: list = [])
         return [{current_day:[0 for _ in range(24)]}]
 
 
-def fetch_timezone(member_id: int) -> str:
+def fetch_timezone(member_id: str) -> str:
     ''' Return someone's timezone (default UTC) '''
     db = sqlite3CONNECT(sql_filenameFULL)
     cursor = db.cursor()
-    cursor.execute(f"SELECT TIMEZONE FROM {sql_filename} WHERE ID=?",(member_id,))
-    return_tzone = cursor.fetchone()[0]
+    cursor.execute(f"SELECT TIMEZONE FROM {sql_filename} WHERE HASHED_ID=?",(member_id,))
+    return_tzone = cursor.fetchone()
     cursor.close()
     db.close()
-    return return_tzone
+    if return_tzone: return return_tzone[0]
+    else: return "UTC"
     
 
 def insert_update(lista: list) -> None:
@@ -130,11 +134,12 @@ def order_dict(unordered_dict: dict) -> list:
         for field in data_fields]
 
 
-def replace_timezone(member_id: int, tzone: str):
+def replace_timezone(member_id: str, tzone: str):
     ''' Updates the .sqlite file with a new, valid timezone for a particular user '''
     db = sqlite3CONNECT(sql_filenameFULL)
     cursor = db.cursor()
-    cursor.execute(f"UPDATE {sql_filename} SET TIMEZONE = ? WHERE ID = ?",(tzone,member_id))
+    print(member_id)
+    cursor.execute(f"UPDATE {sql_filename} SET TIMEZONE = ? WHERE HASHED_ID = ?",(tzone,member_id))
     cursor.close()
     db.commit()
     db.close()

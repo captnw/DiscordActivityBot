@@ -1,14 +1,10 @@
-from pathlib import Path
-from sys import path as sysPATH
-sysPATH.insert(1, str(Path.cwd()))
-
 from discord.ext import commands
-import secretTextfile
+import library.secretTextfile as secretTextfile
 
 
 async def is_admin(context):
     # return true if the person is the owner
-    if context.message.author.id == secretTextfile.__OWNER_ID__: return True
+    if context.message.author.id == secretTextfile.OWNER_ID: return True
     return False
 
 

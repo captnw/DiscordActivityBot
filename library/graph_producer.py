@@ -22,8 +22,8 @@ def move_last(int_list: list) -> list:
     return int_list
 
 
-def produce_user_graph(data: list, id: str, name: str, time_zone: str) -> None:
-    '''Given a list, id, and name it outputs a png that
+def produce_user_graph(data: list, hashed_id: str, name: str, time_zone: str) -> None:
+    '''Given a list, hashed_id, and name it outputs a png that
        displays their hours online O(10)*O(1)'''
 
     cat_time = ['12AM','1AM','2AM','3AM','4AM','5AM','6AM','7AM','8AM','9AM','10AM','11AM','12PM',
@@ -45,7 +45,7 @@ def produce_user_graph(data: list, id: str, name: str, time_zone: str) -> None:
         plt.scatter(hour_x, move_last(int_to_str(activity_list)))
 
     plt.scatter(hour_x, int_to_str(zero_list), color="white")
-    plt.savefig(f"./graph_folder/UserAct_{id}.png")
+    plt.savefig(f"./graph_folder/UserAct_{hashed_id}.png")
     plt.close()
 
 

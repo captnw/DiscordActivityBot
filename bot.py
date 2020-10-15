@@ -6,20 +6,26 @@ from collections import defaultdict
 from datetime import datetime as DateTime
 from discord.ext.commands import Bot as BotBase
 from glob import glob
-from graph_producer import clear_graph_folder
+import library.secretTextfile as secretTextfile, library.sqlite_handler as sqlite_handler, library.graph_producer as graph_producer
+import library.id_obfuscater as id_obfuscater
 from os import system as osSYSTEM, name as osNAME, path as osPATH
-from pytz import UTC
-import secretTextfile, sqlite_handler
+from pytz import timezone as pytzTIMEZONE, UTC as pytzUTC
 
-# in this experimental branch, we're switching from csv to .db (using sqlite3)
+# Run the "py bot.py" to run this bot. You may need some libraries before running...
+# Python external libraries used: (all downloaded from pip)
+# - APScheduler
+# - discord.py
+# - hashids
+# - matplotlib
+# - pytz
 
-# Some of the template bot code borrowed from Carberra Tutorials (thank you!)
-ERROR_LOG_FILE = "error.txt"
-DEBUG_MODE = False
+CHECK_INTERVAL_SECONDS = 120 # Interval between when check_update_online is called, recommended minimum: 30 seconds
 COGS = [path.split("\\")[-1][:-3] for path in glob("./cogs/*.py")] # Fetch cog files
-VERSION = "0.6.0" # Bot version
-CHECK_INTERVAL_SECONDS = 120 #120 # Interval between when check_update_online is called
-online_message = "" # stores who is online at the time when check_update_online is called 
+CURRENT_TZ = pytzTIMEZONE(secretTextfile.PREFERRED_TIMEZONE) # Timezone for the command prompt
+DEBUG_MODE = False
+ERROR_LOG_FILE = "error.txt"
+VERSION = "1.0.0" # Bot version
+online_message = "" # stores who is online at the time when check_update_online is called
 
 
 def prompt_header(*args) -> None:
@@ -33,12 +39,12 @@ def prompt_header(*args) -> None:
 async def check_prompt():
     ''' Prints when check_update_online was last called, a clock of when it will be called again, and the list of people
         who were online in any server when check_update_online was called. '''
-    now = DateTime.now(UTC) # UTC time
+    now = DateTime.now(CURRENT_TZ) 
     time_left = CHECK_INTERVAL_SECONDS # in seconds, max is 3600 (1 hr), min is 0 seconds
     
     divider_width = 60 # characters
     HORIZONTAL_DIVIDER = "-"*divider_width+"\n"
-    lastcheck_message = f"Last checked who was online on {now.hour:02}:{now.minute:02}:{now.second:02} at {now.month}/{now.day:02}/{now.year} (UTC format).\n"
+    lastcheck_message = f"Last checked who was online on {now.hour:02}:{now.minute:02}:{now.second:02} at {now.month}/{now.day:02}/{now.year} ({secretTextfile.PREFERRED_TIMEZONE} format).\n"
     global online_message
     while time_left >= 0:
         # Construct the string and print it all at once to reduce screen flickering
@@ -56,7 +62,7 @@ def check_update_online(client) -> None:
     ''' Check what discord users that the bot sees (in any server) are online at the current hour and stores that info + their
     status into a datastructure (a list of dicts which has a key of string and a value of list of ints) '''
     
-    now = DateTime.now(UTC) # UTC time
+    now = DateTime.now(pytzUTC) # MUST BE UTC time
     
     global online_message
     online_message = "" # reset the message
@@ -67,28 +73,29 @@ def check_update_online(client) -> None:
 
     for member in sorted(client.get_all_members(), key = lambda x : str(x).split("#")[0].lower()):
         if (not (member.bot)):
-            
-            if (member.id in inserted_user_id):
+            hashed_id = id_obfuscater.encrypt(member.id)
+            if (hashed_id in inserted_user_id):
                 # Check if we have already inserted a record belonging to this user into all_member_data
                 # This means that the user is in multiple servers
 
                 for index in range(0, len(all_member_data)):
-                    if all_member_data[index][1] == member.id:
+                    if all_member_data[index][sqlite_handler.HASHED_ID_INDEX] == hashed_id:
                         # Found it, update guild_hash_list
-                        guild_hash_list = astEVAL(all_member_data[index][2])
+                        guild_hash_list = astEVAL(all_member_data[index][sqlite_handler.GUILD_HASH_LIST_INDEX])
                         if hash(member.guild) not in guild_hash_list:
                             guild_hash_list.append(hash(member.guild))
-                            all_member_data[index] = tuple([item if index != 2 else str(guild_hash_list) for index, item in enumerate(all_member_data[index])])
+                            all_member_data[index] = tuple([item if index != sqlite_handler.GUILD_HASH_LIST_INDEX 
+                                                            else str(guild_hash_list) for index, item in enumerate(all_member_data[index])])
                         # Double check if the user is online in a different server
                         if (member.name not in online_server[member.guild] and str(member.status) != "offline"):
                             online_server[member.guild].append(member.name)
                         break
             else:
-                inserted_user_id.add(member.id)
-                unordered_data = {"NAME":str(member), "ID":member.id, 
-                                "STATUS":str(member.status), "TIMEZONE":sqlite_handler.fetch_timezone(member.id)}
-                old_hashlist = sqlite_handler.fetch_guild_hashes(member.id, hash(member.guild))
-                old_schedule = sqlite_handler.fetch_schedule(member.id, now.day, old_hashlist)
+                inserted_user_id.add(hashed_id)
+                unordered_data = {"HASHED_ID":hashed_id, "STATUS":str(member.status), 
+                                    "TIMEZONE":sqlite_handler.fetch_timezone(hashed_id)}
+                old_hashlist = sqlite_handler.fetch_guild_hashes(hashed_id, hash(member.guild))
+                old_schedule = sqlite_handler.fetch_schedule(hashed_id, now.day, old_hashlist)
 
                 if not (now.day in old_schedule[-1].keys()):
                     # Consider making a new dict if today is different
@@ -112,25 +119,21 @@ def check_update_online(client) -> None:
     temp_online_message = ""
 
     if not bool(online_server):
-        #print("Nobody is online in any server right now.\n")
-        temp_online_message = "Nobody is online in any server right now.\n"
+        temp_online_message = "Nobody was online in any server.\n"
     else:
         for guild, member_list in online_server.items():
-            #print(f"|| {str(guild)} server:")
             temp_online_message += f"|| {str(guild)} server:\n"
             online_people = (", ".join(member_list)).rstrip(", ")
             if online_people.find(",") != -1:
-                #print("{} are online right now.\n".format(online_people))
-                temp_online_message += f"{online_people} are online right now.\n\n"
+                temp_online_message += f"{online_people} were online.\n\n"
             elif online_people != "":
-                #print("{} is online right now.\n".format(online_people))
-                temp_online_message += f"{online_people} is online right now.\n\n"
+                temp_online_message += f"{online_people} was online.\n\n"
             else:
-                #print("Nobody is online in this server.\n")
-                temp_online_message += "Nobody is online in this server.\n\n"
+                temp_online_message += "Nobody was online in this server.\n\n"
 
     online_message = temp_online_message
 
+# Some of the template bot code borrowed from Carberra Tutorials (thank you!)
 
 class Bot(BotBase):
     def __init__(self):
@@ -145,14 +148,14 @@ class Bot(BotBase):
             print(f"{cog} cog loaded")
         print("\nCog setup complete")
         # Clean graph folder
-        clear_graph_folder()
+        graph_producer.clear_graph_folder()
         print("\nClean graph folder check complete")
 
     def run(self, version):
         self.VERSION = version
         prompt_header("Setting up cogs...")
         self.setup()
-        self.TOKEN = secretTextfile.__TOKEN__
+        self.TOKEN = secretTextfile.BOT_TOKEN
 
         print("\nRunning bot...")
         super().run(self.TOKEN, reconnect=True)
@@ -162,7 +165,7 @@ class Bot(BotBase):
 
     async def on_disconnect(self):
         prompt_header("Bot disconnected.")
-        clear_graph_folder()
+        graph_producer.clear_graph_folder()
 
     async def on_ready(self):
         if not self.ready:
@@ -183,7 +186,7 @@ class Bot(BotBase):
 
         # Run all jobs immediately.
         for job in self.scheduler.get_jobs():
-            job.modify(next_run_time = DateTime.now())
+            job.modify(next_run_time = DateTime.now(CURRENT_TZ))
 
 
 bot = Bot()
@@ -196,12 +199,12 @@ if __name__ == "__main__":
             error_log = open("error.txt","a")
         else:
             error_log = open("error.txt","w")
-        now = DateTime.now(UTC) # UTC time
+        now = DateTime.now(CURRENT_TZ)
         error_log.write("___________ERROR_CAUGHT_______________\n")
-        error_log.write(f"Error message logged on {now.hour:02}:{now.minute:02}:{now.second:02} at {now.month}/{now.day:02}/{now.year} (UTC format)\n")
+        error_log.write(f"Error message logged on {now.hour:02}:{now.minute:02}:{now.second:02} at {now.month}/{now.day:02}/{now.year} ({secretTextfile.PREFERRED_TIMEZONE} format)\n")
         error_log.write("{}\n".format(e))
         error_log.close()
         for job in bot.scheduler.get_jobs():
             job.remove()
         bot.scheduler.shutdown()
-        clear_graph_folder()
+        sqlite_handler.clear_graph_folder()

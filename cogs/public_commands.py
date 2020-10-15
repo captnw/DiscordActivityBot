@@ -1,15 +1,10 @@
 from asyncio import sleep as asyncioSLEEP
 from discord import File as discordFILE
 from discord.ext import commands
-from pathlib import Path
-from pytz import UTC as pytzUTC
-from sys import path as sysPATH
-
-sysPATH.insert(1, str(Path.cwd()))
-
-from graph_producer import produce_user_graph, produce_server_graph
-from sqlite_handler import fetch_timezone, replace_timezone, fetch_schedule, online_freq
-import timezones
+from library.graph_producer import produce_user_graph, produce_server_graph
+from library.sqlite_handler import fetch_timezone, replace_timezone, fetch_schedule, online_freq
+from library.id_obfuscater import encrypt
+import library.timezones as timezones
 
 
 class public_commands(commands.Cog):
@@ -23,15 +18,15 @@ class public_commands(commands.Cog):
             The second argument denotes whether you want the bot to dm you the activity graph or 
             post it in the server chat. '''
         user_name = str(context.message.author).split("#")[0]
-        user_id = context.message.author.id
-        user_tz = fetch_timezone(user_id)
+        hashed_user_id = encrypt(context.message.author.id)
+        user_tz = fetch_timezone(hashed_user_id)
 
-        lista = fetch_schedule(user_id, pytzUTC)
+        lista = fetch_schedule(hashed_user_id, user_tz)
         adjusted_lista = timezones.adjust_schedule_timezone(lista, user_tz)
-        produce_user_graph(adjusted_lista, user_id, user_name, user_tz)
+        produce_user_graph(adjusted_lista, hashed_user_id, user_name, user_tz)
         
         if private == "False" or private == "false":
-            image_message = await context.send(file=discordFILE(f"./graph_folder/UserAct_{user_id}.png"))
+            image_message = await context.send(file=discordFILE(f"./graph_folder/UserAct_{hashed_user_id}.png"))
             emoji = "\N{THUMBS UP SIGN}"
             
             try:
@@ -45,7 +40,7 @@ class public_commands(commands.Cog):
                 pass
         else:
             # DM the user with the image, no need to delete the image.
-            image_message = await context.message.author.send(file=discordFILE(f"./graph_folder/UserAct_{user_id}.png"))
+            image_message = await context.message.author.send(file=discordFILE(f"./graph_folder/UserAct_{hashed_user_id}.png"))
             emoji = "\N{THUMBS UP SIGN}"
             try:
                 await context.message.add_reaction(emoji) # React with success
@@ -89,7 +84,7 @@ class public_commands(commands.Cog):
     @commands.command(aliases = ["GetTimeZone", "GetTZ", "Gettz", "gettz"])
     async def gettimezone(self, context):
         ''' See what is your personal timezone (the bot will direct message you)'''
-        user_tz = fetch_timezone(context.message.author.id)
+        user_tz = fetch_timezone(encrypt(context.message.author.id))
         await context.message.author.send(f"Your timezone is currently: {user_tz}\n")
 
 
@@ -99,7 +94,7 @@ class public_commands(commands.Cog):
             to set as, you can try saying: "=timezone" to check all valid timezones. '''
         emoji = "\N{THUMBS UP SIGN}"
         if tz in timezones.valid_timezones:
-            replace_timezone(context.message.author.id, tz)
+            replace_timezone(encrypt(context.message.author.id), tz)
         else:
             await context.send("Invalid timezone. Say =tz for valid timezones.")
             emoji = "\N{THUMBS DOWN SIGN}"
