@@ -4,6 +4,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from collections import defaultdict 
 from datetime import datetime as DateTime
+from discord import Status as discordSTATUS, Activity as discordACTIVITY, ActivityType as discordACTIVITYTYPE
 from discord.ext.commands import Bot as BotBase
 from glob import glob
 import library.secretTextfile as secretTextfile, library.sqlite_handler as sqlite_handler, library.graph_producer as graph_producer
@@ -19,6 +20,7 @@ from pytz import timezone as pytzTIMEZONE, UTC as pytzUTC
 # - matplotlib
 # - pytz
 
+BOT_ACTIVITY = discordACTIVITY(name="for =help", type=discordACTIVITYTYPE.watching)
 CHECK_INTERVAL_SECONDS = 120 # Interval between when check_update_online is called, recommended minimum: 30 seconds
 COGS = [path.split("\\")[-1][:-3] for path in glob("./cogs/*.py")] # Fetch cog files
 CURRENT_TZ = pytzTIMEZONE(secretTextfile.PREFERRED_TIMEZONE) # Timezone for the command prompt
@@ -183,6 +185,8 @@ class Bot(BotBase):
             print("Bot ready." if not DEBUG_MODE else "Bot ready. Running in debug mode.")
         else:
             prompt_header(f"Bot reconnected.")
+
+        await self.change_presence(status=discordSTATUS.online, activity=BOT_ACTIVITY)
 
         # Run all jobs immediately.
         for job in self.scheduler.get_jobs():
