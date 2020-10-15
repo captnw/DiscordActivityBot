@@ -1,15 +1,10 @@
-from pathlib import Path
-import sys
-sys.path.insert(1, str(Path.cwd()))
-
 from discord.ext import commands
-import secretTextfile
+import library.secretTextfile as secretTextfile
 
 
 async def is_admin(context):
-    for role in context.message.author.roles:
-        if (role.name == secretTextfile.__ADMIN_ROLE__ ):
-            return True
+    # return true if the person is the owner
+    if context.message.author.id == secretTextfile.OWNER_ID: return True
     return False
 
 
@@ -21,7 +16,7 @@ class admin_commands(commands.Cog):
     @commands.command(aliases = ["die","Die","Shutdown"])
     @commands.check(is_admin)
     async def shutdown(self, context):
-        """ Logs out the bot """
+        '''Logs out and shuts down the bot'''
         emoji = "\N{THUMBS UP SIGN}"
         await context.message.add_reaction(emoji)
         await self.client.logout()

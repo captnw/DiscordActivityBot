@@ -1,1 +1,1 @@
-This folder will be the place where all the graphs will be stored
+This folder will be the place where all the graphs will be temporarily stored
