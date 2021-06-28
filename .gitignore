@@ -130,3 +130,13 @@ dmypy.json
 
 # secretTextfile.py
 library/secretTextfile.py
+
+# all image files
+*.png
+*.jpg
+
+# any sqlite files
+*.sqlite
+
+# vscode
+.vscode

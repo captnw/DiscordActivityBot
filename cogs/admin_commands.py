@@ -19,7 +19,7 @@ class admin_commands(commands.Cog):
         '''Logs out and shuts down the bot'''
         emoji = "\N{THUMBS UP SIGN}"
         await context.message.add_reaction(emoji)
-        await self.client.logout()
+        await self.client.close()
 
 
     @shutdown.error

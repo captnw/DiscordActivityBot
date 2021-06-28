@@ -4,7 +4,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from collections import defaultdict 
 from datetime import datetime as DateTime
-from discord import Status as discordSTATUS, Activity as discordACTIVITY, ActivityType as discordACTIVITYTYPE
+from discord import Status as discordSTATUS, Activity as discordACTIVITY, ActivityType as discordACTIVITYTYPE, Intents as discordINTENTS
 from discord.ext.commands import Bot as BotBase
 from glob import glob
 import library.secretTextfile as secretTextfile, library.sqlite_handler as sqlite_handler, library.graph_producer as graph_producer
@@ -12,28 +12,91 @@ import library.id_obfuscater as id_obfuscater
 from os import system as osSYSTEM, name as osNAME, path as osPATH
 from pytz import timezone as pytzTIMEZONE, UTC as pytzUTC
 
-# Run the "py bot.py" to run this bot. You may need some libraries before running...
-# Python external libraries used: (all downloaded from pip)
-# - APScheduler
-# - discord.py
-# - hashids
-# - matplotlib
-# - pytz
+# Run the "StartBot.bat" (for windows) or "StartBot.sh" (for mac/linux) to run the bot
+# the first StartBot .bat/.sh file should install the required python packages, and initialize and enter the pyenv virtual environment
+# the second StartBot .bat/.sh file would run the bot and keep it on if it turns off
+# you can abort any of these commands via control + c.
 
+# Settings and global variables
 BOT_ACTIVITY = discordACTIVITY(name="for =help", type=discordACTIVITYTYPE.watching)
 CHECK_INTERVAL_SECONDS = 120 # Interval between when check_update_online is called, recommended minimum: 30 seconds
 COGS = [path.split("\\")[-1][:-3] for path in glob("./cogs/*.py")] # Fetch cog files
 CURRENT_TZ = pytzTIMEZONE(secretTextfile.PREFERRED_TIMEZONE) # Timezone for the command prompt
-DEBUG_MODE = False
-ERROR_LOG_FILE = "error.txt"
-VERSION = "1.0.0" # Bot version
+DEBUG_MODE = False # disables the countdown clock and users who were online GUI
+ERROR_LOG_FILE = "error.txt" # name of error file
+VERSION = "1.5.0" # Bot version
+USERNAMES_DISPLAYED_IN_SERVER_LIMIT = 50 # how many users that were online can be displayed under the server name in the GUI at once (prevents clutter) 
+
+sigint_triggered = False # has the sigint been triggered?
 online_message = "" # stores who is online at the time when check_update_online is called
+
+# Some of the template bot code borrowed from Carberra Tutorials (thank you!)
+class Bot(BotBase):
+    def __init__(self):
+        self.ready = False
+        self.scheduler = AsyncIOScheduler()
+        intents = discordINTENTS.default()
+        intents.members = True # this allows the bot to see other members
+        intents.presences = True # this allows the bot to see other member's presences
+        intents.reactions = True # allows the bot to react to comments
+        intents.messages = True # allow the bot to send server and direct messages
+        super().__init__(command_prefix='=', intents=intents)
+
+    def setup(self):
+        # LOAD COGS
+        for cog in COGS:
+            self.load_extension(f"cogs.{cog}")
+            print(f"{cog} cog loaded")
+        print("\nCog setup complete")
+        # clean the images associated with any commands
+        graph_producer.clear_graph_folder()
+        print("\nClean graph folder check complete")
+
+    def run(self, version):
+        self.VERSION = version
+        prompt_header("Setting up cogs...\n")
+        self.setup()
+        self.TOKEN = secretTextfile.BOT_TOKEN
+
+        print("\nRunning bot...")
+        super().run(self.TOKEN, reconnect=True)
+
+    async def on_connect(self):
+        print("\nBot connected.")
+
+    async def on_disconnect(self):
+        prompt_header("Bot disconnected.\n")
+
+        if activityBot.scheduler.running:
+            activityBot.scheduler.remove_all_jobs()
+            activityBot.scheduler.shutdown()
+
+    async def on_ready(self):
+        if not self.ready:
+            self.ready = True
+            if not DEBUG_MODE:
+                self.scheduler.add_job(check_prompt, IntervalTrigger(seconds=CHECK_INTERVAL_SECONDS), 
+                    replace_existing=True, id="CountdownClock", max_instances = 2, next_run_time = DateTime.now(CURRENT_TZ))
+            self.scheduler.add_job(lambda: check_update_online(self), IntervalTrigger(seconds=CHECK_INTERVAL_SECONDS), 
+                replace_existing=True, id="CheckUpdate", next_run_time = DateTime.now(CURRENT_TZ)) # check every 2 minutes
+            
+            self.scheduler.start()
+
+            prompt_header("Bot logged in as:\n")
+            print("Username: {}".format(self.user.name))
+            print("User id: {}".format(self.user.id))
+            print('------\n')
+            print("Bot ready." if not DEBUG_MODE else "Bot ready. Running in debug mode.")
+        else:
+            prompt_header(f"Bot reconnected.")
+
+        await self.change_presence(status=discordSTATUS.online, activity=BOT_ACTIVITY)
 
 
 def prompt_header(*args) -> None:
     ''' Clears the terminal, print the header, and prints any additional strings EXACTLY as they are passed in'''
     osSYSTEM('cls' if osNAME=='nt' else 'clear') # Clears the terminal
-    print(f"\\\\_ScheduleBot v.{VERSION}_//")
+    print(f"\\\\ ActivityBot v.{VERSION} //")
     for string in args: 
         print(string, end="")
     
@@ -43,11 +106,14 @@ async def check_prompt():
         who were online in any server when check_update_online was called. '''
     now = DateTime.now(CURRENT_TZ) 
     time_left = CHECK_INTERVAL_SECONDS # in seconds, max is 3600 (1 hr), min is 0 seconds
-    
+    time_left -= 6 # shave off 6 seconds to prevent overlapping coroutines
+
     divider_width = 60 # characters
     HORIZONTAL_DIVIDER = "-"*divider_width+"\n"
     lastcheck_message = f"Last checked who was online on {now.hour:02}:{now.minute:02}:{now.second:02} at {now.month}/{now.day:02}/{now.year} ({secretTextfile.PREFERRED_TIMEZONE} format).\n"
+    
     global online_message
+
     while time_left >= 0:
         # Construct the string and print it all at once to reduce screen flickering
         time_left_mins, time_left_secs = divmod(time_left, 60)
@@ -55,7 +121,7 @@ async def check_prompt():
         if online_message == "":
             prompt_header(lastcheck_message, nextcheck_message, HORIZONTAL_DIVIDER,"Data pending...\n", HORIZONTAL_DIVIDER)
         else:
-            prompt_header(lastcheck_message, nextcheck_message, HORIZONTAL_DIVIDER, online_message, HORIZONTAL_DIVIDER)
+            prompt_header(lastcheck_message, nextcheck_message, HORIZONTAL_DIVIDER, online_message, HORIZONTAL_DIVIDER, lastcheck_message, nextcheck_message)
         time_left -= 1
         await asyncioSLEEP(1)
 
@@ -115,8 +181,11 @@ def check_update_online(client) -> None:
                 unordered_data["GUILD_HASH_LIST"] = str(old_hashlist)
                 all_member_data.append(tuple(sqlite_handler.order_dict(unordered_data)))
 
-    sqlite_handler.insert_update(all_member_data)
-    sqlite_handler.average_freq_graph()
+    # if there isn't any data, don't update the sql file
+    # nor average out the frequency graph
+    if (all_member_data):
+        sqlite_handler.insert_update(all_member_data)
+        sqlite_handler.average_freq_graph()
 
     temp_online_message = ""
 
@@ -125,80 +194,35 @@ def check_update_online(client) -> None:
     else:
         for guild, member_list in online_server.items():
             temp_online_message += f"|| {str(guild)} server:\n"
+            
+            aLotOfUsersAreOnline = len(member_list) > USERNAMES_DISPLAYED_IN_SERVER_LIMIT
+            if aLotOfUsersAreOnline:
+                member_list = member_list[:50] # grab 50 users from the entire list, in alphabetical order
             online_people = (", ".join(member_list)).rstrip(", ")
             if online_people.find(",") != -1:
-                temp_online_message += f"{online_people} were online.\n\n"
+                if aLotOfUsersAreOnline:
+                    temp_online_message += f"{online_people} and many others were online.\n\n"
+                else:
+                    temp_online_message += f"{online_people} were online.\n\n"
             elif online_people != "":
                 temp_online_message += f"{online_people} was online.\n\n"
             else:
                 temp_online_message += "Nobody was online in this server.\n\n"
-
+    
     online_message = temp_online_message
 
-# Some of the template bot code borrowed from Carberra Tutorials (thank you!)
-
-class Bot(BotBase):
-    def __init__(self):
-        self.ready = False
-        self.scheduler = AsyncIOScheduler()
-        super().__init__(command_prefix='=')
-
-    def setup(self):
-        # LOAD COGS
-        for cog in COGS:
-            self.load_extension(f"cogs.{cog}")
-            print(f"{cog} cog loaded")
-        print("\nCog setup complete")
-        # Clean graph folder
-        graph_producer.clear_graph_folder()
-        print("\nClean graph folder check complete")
-
-    def run(self, version):
-        self.VERSION = version
-        prompt_header("Setting up cogs...")
-        self.setup()
-        self.TOKEN = secretTextfile.BOT_TOKEN
-
-        print("\nRunning bot...")
-        super().run(self.TOKEN, reconnect=True)
-
-    async def on_connect(self):
-        print("\nBot connected.")
-
-    async def on_disconnect(self):
-        prompt_header("Bot disconnected.")
-        graph_producer.clear_graph_folder()
-
-    async def on_ready(self):
-        if not self.ready:
-            self.ready = True
-            if not DEBUG_MODE:
-                self.scheduler.add_job(check_prompt, IntervalTrigger(seconds=CHECK_INTERVAL_SECONDS), 
-                    replace_existing=True, id="CountdownClock", max_instances = 2)
-            self.scheduler.add_job(lambda: check_update_online(self), IntervalTrigger(seconds=CHECK_INTERVAL_SECONDS), replace_existing=True, id="CheckUpdate") # check every 2 minutes
-            self.scheduler.start()
-
-            prompt_header("Bot logged in as:\n")
-            print("Username: {}".format(self.user.name))
-            print("User id: {}".format(self.user.id))
-            print('------\n')
-            print("Bot ready." if not DEBUG_MODE else "Bot ready. Running in debug mode.")
-        else:
-            prompt_header(f"Bot reconnected.")
-
-        await self.change_presence(status=discordSTATUS.online, activity=BOT_ACTIVITY)
-
-        # Run all jobs immediately.
-        for job in self.scheduler.get_jobs():
-            job.modify(next_run_time = DateTime.now(CURRENT_TZ))
-
-
-bot = Bot()
 
 if __name__ == "__main__":
     try:
-        bot.run(VERSION)
+        global activityBot
+        activityBot = Bot()
+        activityBot.run(VERSION)
+
+    except (KeyboardInterrupt, SystemExit):
+        exit(0)
+
     except Exception as e:
+        # Write an error message
         if osPATH.exists(ERROR_LOG_FILE):
             error_log = open("error.txt","a")
         else:
@@ -208,7 +232,11 @@ if __name__ == "__main__":
         error_log.write(f"Error message logged on {now.hour:02}:{now.minute:02}:{now.second:02} at {now.month}/{now.day:02}/{now.year} ({secretTextfile.PREFERRED_TIMEZONE} format)\n")
         error_log.write("{}\n".format(e))
         error_log.close()
-        for job in bot.scheduler.get_jobs():
-            job.remove()
-        bot.scheduler.shutdown()
-        sqlite_handler.clear_graph_folder()
+
+    finally:  
+        if activityBot.scheduler.running:
+            activityBot.scheduler.remove_all_jobs()
+            activityBot.scheduler.shutdown()
+
+        # clean the images associated with any commands
+        graph_producer.clear_graph_folder() 

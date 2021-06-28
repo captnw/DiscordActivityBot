@@ -29,7 +29,6 @@ db, cursor = None, None
 
 ## Code segment ends ##
 
-
 def average_freq_graph() -> None:
     ''' Average out the freq graph ata according to the amount of days recorded so far '''
     for guild_hash in online_freq:
@@ -118,7 +117,7 @@ def insert_update(lista: list) -> None:
         raise ValueError("Function sqlite_handler.insert_update(lista: list) should have a nonempty list as an argument")
     db = sqlite3CONNECT(sql_filenameFULL)
     cursor = db.cursor()
-    cursor.execute(f"DELETE FROM {sql_filename}"); # clear table, removing people that had left servers
+    cursor.execute(f"DELETE FROM {sql_filename}") # clear table, removing people that had left servers
     questions = (", ".join(["?" for _ in data_fields])).rstrip(", ") # generate the ?, ?, ?, ?
     fields = (", ".join([field[0] for field in data_fields])).rstrip(", ") # generate the fields
     cursor.executemany(f"INSERT OR REPLACE INTO {sql_filename} ({fields}) VALUES ({questions})", lista) # "upserting" = insert OR update, look it up.
