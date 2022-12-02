@@ -1,15 +1,18 @@
+# Standard imports
+from collections import defaultdict 
+from datetime import datetime as DateTime
+from os import system as osSYSTEM, name as osNAME, path as osPATH
+
+# custom imports
 from ast import literal_eval as astEVAL
 from asyncio import sleep as asyncioSLEEP
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from collections import defaultdict 
-from datetime import datetime as DateTime
 from discord import Status as discordSTATUS, Activity as discordACTIVITY, ActivityType as discordACTIVITYTYPE, Intents as discordINTENTS
 from discord.ext.commands import Bot as BotBase
 from glob import glob
 import library.secretTextfile as secretTextfile, library.sqlite_handler as sqlite_handler, library.graph_producer as graph_producer
 import library.id_obfuscater as id_obfuscater
-from os import system as osSYSTEM, name as osNAME, path as osPATH
 from pytz import timezone as pytzTIMEZONE, UTC as pytzUTC
 
 # Run the "StartBot.bat" (for windows) or "StartBot.sh" (for mac/linux) to run the bot
@@ -27,19 +30,24 @@ ERROR_LOG_FILE = "error.txt" # name of error file
 VERSION = "1.5.0" # Bot version
 USERNAMES_DISPLAYED_IN_SERVER_LIMIT = 50 # how many users that were online can be displayed under the server name in the GUI at once (prevents clutter) 
 
-sigint_triggered = False # has the sigint been triggered?
+SIGINT_TRIGGERED = False # has the sigint been triggered?
 online_message = "" # stores who is online at the time when check_update_online is called
 
 # Some of the template bot code borrowed from Carberra Tutorials (thank you!)
 class Bot(BotBase):
-    def __init__(self):
+    def __init__(self, version):
         self.ready = False
         self.scheduler = AsyncIOScheduler()
+        
+        self.VERSION = version
+        self.TOKEN = secretTextfile.BOT_TOKEN
+
         intents = discordINTENTS.default()
         intents.members = True # this allows the bot to see other members
         intents.presences = True # this allows the bot to see other member's presences
         intents.reactions = True # allows the bot to react to comments
         intents.messages = True # allow the bot to send server and direct messages
+        
         super().__init__(command_prefix='=', intents=intents)
 
     def setup(self):
@@ -52,11 +60,10 @@ class Bot(BotBase):
         graph_producer.clear_graph_folder()
         print("\nClean graph folder check complete")
 
-    def run(self, version):
-        self.VERSION = version
+    def run(self):
+        
         prompt_header("Setting up cogs...\n")
         self.setup()
-        self.TOKEN = secretTextfile.BOT_TOKEN
 
         print("\nRunning bot...")
         super().run(self.TOKEN, reconnect=True)
@@ -88,7 +95,7 @@ class Bot(BotBase):
             print('------\n')
             print("Bot ready." if not DEBUG_MODE else "Bot ready. Running in debug mode.")
         else:
-            prompt_header(f"Bot reconnected.")
+            prompt_header("Bot reconnected.")
 
         await self.change_presence(status=discordSTATUS.online, activity=BOT_ACTIVITY)
 
@@ -104,13 +111,13 @@ def prompt_header(*args) -> None:
 async def check_prompt():
     ''' Prints when check_update_online was last called, a clock of when it will be called again, and the list of people
         who were online in any server when check_update_online was called. '''
-    now = DateTime.now(CURRENT_TZ) 
+    currentTime = DateTime.now(CURRENT_TZ) 
     time_left = CHECK_INTERVAL_SECONDS # in seconds, max is 3600 (1 hr), min is 0 seconds
     time_left -= 6 # shave off 6 seconds to prevent overlapping coroutines
 
     divider_width = 60 # characters
     HORIZONTAL_DIVIDER = "-"*divider_width+"\n"
-    lastcheck_message = f"Last checked who was online on {now.hour:02}:{now.minute:02}:{now.second:02} at {now.month}/{now.day:02}/{now.year} ({secretTextfile.PREFERRED_TIMEZONE} format).\n"
+    lastcheck_message = f"Last checked who was online on {currentTime.hour:02}:{currentTime.minute:02}:{currentTime.second:02} at {currentTime.month}/{currentTime.day:02}/{currentTime.year} ({secretTextfile.PREFERRED_TIMEZONE} format).\n"
     
     global online_message
 
@@ -215,8 +222,8 @@ def check_update_online(client) -> None:
 if __name__ == "__main__":
     try:
         global activityBot
-        activityBot = Bot()
-        activityBot.run(VERSION)
+        activityBot = Bot(VERSION)
+        activityBot.run()
 
     except (KeyboardInterrupt, SystemExit):
         exit(0)
